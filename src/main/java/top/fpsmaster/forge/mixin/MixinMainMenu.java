@@ -4,7 +4,9 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiMainMenu;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
+import top.fpsmaster.FPSMaster;
 import top.fpsmaster.ui.screens.mainmenu.MainMenu;
+import top.fpsmaster.ui.screens.oobe.OobeScreen;
 
 @Mixin(GuiMainMenu.class)
 public class MixinMainMenu {
@@ -15,7 +17,7 @@ public class MixinMainMenu {
      */
     @Overwrite
     public void initGui(){
-        Minecraft.getMinecraft().displayGuiScreen(new MainMenu());
+        Minecraft.getMinecraft().displayGuiScreen(FPSMaster.configManager.configure.oobeCompleted ? new MainMenu() : new OobeScreen());
     }
 }
 

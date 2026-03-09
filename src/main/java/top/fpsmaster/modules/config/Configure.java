@@ -3,6 +3,9 @@ package top.fpsmaster.modules.config;
 public class Configure {
     public double volume = 1.0;
     public String background = "panorama_1";
+    public boolean oobeCompleted = false;
+    public boolean antiCheatEnabled = true;
+    public boolean anonymousDataEnabled = true;
     public int classicBackgroundColor = 0xFF000000;
     public float classicBackgroundHue = 0f;
     public float classicBackgroundSaturation = 0f;

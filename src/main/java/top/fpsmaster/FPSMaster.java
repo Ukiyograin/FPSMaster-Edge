@@ -42,6 +42,7 @@ public class FPSMaster {
     public static Language i18n = new Language();
     public static ClientThreadPool async = new ClientThreadPool(100);
     public static boolean development = false;
+    public static boolean defaultConfigExistedBeforeLoad = false;
 
     private static void checkDevelopment() {
         try {
@@ -75,6 +76,8 @@ public class FPSMaster {
 
     private void initializeConfigures() throws Exception {
         ClientLogger.info("Initializing Config...");
+        File defaultConfig = new File(FileUtils.dir, "default.json");
+        defaultConfigExistedBeforeLoad = defaultConfig.exists();
         configManager.loadConfig("default");
         MusicPlayer.setVolume((float) configManager.configure.volume);
     }
