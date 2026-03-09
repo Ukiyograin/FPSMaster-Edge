@@ -73,7 +73,6 @@ public class Module {
                             2f
                     );
                 }
-                saveModuleStateQuietly();
             } else if (!state && isEnabled){
                 isEnabled = false;
                 onDisable();
@@ -87,7 +86,6 @@ public class Module {
                             2f
                     );
                 }
-                saveModuleStateQuietly();
             }
         } catch (Exception e) {
             ClientLogger.error("An error occurred while toggling module: " + this.name);
@@ -105,13 +103,6 @@ public class Module {
 
     public boolean isEnabled() {
         return isEnabled;
-    }
-
-    private void saveModuleStateQuietly() {
-        if (FPSMaster.configManager == null || FPSMaster.configManager.isLoadingConfig()) {
-            return;
-        }
-        FPSMaster.configManager.saveConfigQuietly("default");
     }
 }
 
