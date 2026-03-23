@@ -23,10 +23,14 @@ public class CommandManager {
 
     @Subscribe
     public void onChat(EventSendChatMessage e) throws Exception {
-        if (ClientSettings.clientCommand.getValue() && e.msg.startsWith(ClientSettings.prefix.getValue())) {
+        String prefix = ClientSettings.prefix.getValue();
+        if (ClientSettings.clientCommand.getValue() && e.msg.startsWith(prefix)) {
             e.cancel();
             mc.ingameGUI.getChatGUI().addToSentMessages(e.msg);
-            runCommand(e.msg.substring(1));
+            if (e.msg.length() <= prefix.length()) {
+                return;
+            }
+            runCommand(e.msg.substring(prefix.length()));
 
         }
     }

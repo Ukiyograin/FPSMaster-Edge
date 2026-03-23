@@ -1,7 +1,9 @@
 package top.fpsmaster.modules.music;
 
+import top.fpsmaster.FPSMaster;
 import net.minecraft.client.renderer.ThreadDownloadImageData;
 import net.minecraft.util.ResourceLocation;
+import top.fpsmaster.modules.logger.ClientLogger;
 import top.fpsmaster.modules.music.netease.Music;
 import top.fpsmaster.modules.music.netease.deserialize.MusicWrapper;
 import top.fpsmaster.utils.io.HttpRequest;
@@ -29,13 +31,16 @@ public class Track {
 
     public void loadTrack() {
         coverResource = new ResourceLocation("music/track/" + id);
-        ThreadDownloadImageData downloadImageData = new ThreadDownloadImageData(null, null, coverResource, null);
-        try {
-            BufferedImage bufferedImageIn = HttpRequest.downloadImage(picUrl);
-            downloadImageData.setBufferedImage(bufferedImageIn);
-            mc.getTextureManager().loadTexture(coverResource, downloadImageData);
-        } catch (Exception ignored) {
-        }
+        FPSMaster.async.runnable(() -> {
+            ThreadDownloadImageData downloadImageData = new ThreadDownloadImageData(null, null, coverResource, null);
+            try {
+                BufferedImage bufferedImageIn = HttpRequest.downloadImage(picUrl);
+                downloadImageData.setBufferedImage(bufferedImageIn);
+                mc.getTextureManager().loadTexture(coverResource, downloadImageData);
+            } catch (Exception exception) {
+                ClientLogger.warn("Failed to load track cover: " + id);
+            }
+        });
     }
 
     public void loadMusic() {

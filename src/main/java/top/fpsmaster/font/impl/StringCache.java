@@ -388,6 +388,12 @@ public class StringCache {
         cacheDightGlyphs();
     }
 
+    public void destroy() {
+        weakRefCache.clear();
+        stringCache.clear();
+        glyphCache.destroy();
+    }
+
     /**
      * Pre-cache the ASCII digits to allow for fast glyph substitution. Called once from the constructor and called any time the font selection
      * changes at runtime via setDefaultFont().

@@ -26,6 +26,7 @@ import org.lwjgl.opengl.GL14;
 import org.lwjgl.opengl.GLContext;
 import top.fpsmaster.features.impl.interfaces.MiniMap;
 import top.fpsmaster.forge.api.IMinecraft;
+import top.fpsmaster.modules.logger.ClientLogger;
 import top.fpsmaster.ui.minimap.animation.MinimapAnimation;
 import top.fpsmaster.ui.minimap.interfaces.Interface;
 import top.fpsmaster.ui.minimap.interfaces.InterfaceHandler;
@@ -67,6 +68,7 @@ public class Minimap {
     public int minimapWidth;
     public int minimapHeight;
     public MapLoader loader;
+    private Thread loaderThread;
     public MinimapChunk[][] currentBlocks;
     public MinimapChunk[][] loadingBlocks;
     public static boolean frameIsUpdating;
@@ -134,7 +136,16 @@ public class Minimap {
         this.lastBlockY = new int[16];
         this.drawYState = 0;
         this.screen = i;
-        new Thread(this.loader).start();
+        startLoader();
+    }
+
+    private void startLoader() {
+        if (loaderThread != null && loaderThread.isAlive()) {
+            return;
+        }
+        loaderThread = new Thread(this.loader, "FPSMaster-Minimap");
+        loaderThread.setDaemon(true);
+        loaderThread.start();
     }
 
     public static int loadBlockColourFromTexture(final IBlockState state, final Block b, final BlockPos pos, final boolean convert) {
@@ -643,11 +654,11 @@ public class Minimap {
 
     public static void loadFrameBuffer() {
         if (!GLContext.getCapabilities().GL_EXT_framebuffer_object) {
-            System.out.println("FBO not supported! Using minimap safe mode.");
+            ClientLogger.warn("FBO not supported! Using minimap safe mode.");
         } else {
             if (!Minecraft.getMinecraft().gameSettings.fboEnable) {
                 Minecraft.getMinecraft().gameSettings.setOptionValue(GameSettings.Options.FBO_ENABLE, 0);
-                System.out.println("FBO is supported but off. Turning it on.");
+                ClientLogger.info("FBO is supported but off. Turning it on.");
             }
             Minimap.scalingFrameBuffer = new Framebuffer(512, 512, false);
             Minimap.rotationFrameBuffer = new Framebuffer(512, 512, false);
@@ -658,108 +669,130 @@ public class Minimap {
 
     public void renderFrameToFBO(final int bufferSize, final int viewW, final float sizeFix, final float partial, final boolean retryIfError) {
         Minimap.updatePause = true;
-        final int chunkAmount = getLoadSide();
-        final int mapW = chunkAmount * 16;
-        final double playerX = getEntityX(mc.thePlayer, partial);
-        final double playerZ = getEntityZ(mc.thePlayer, partial);
-        final int xFloored = myFloor(playerX);
-        final int zFloored = myFloor(playerZ);
-        int offsetX = xFloored & 0xF;
-        int offsetZ = zFloored & 0xF;
-        final int mapX = this.getMapCoord(chunkAmount, playerX);
-        final int mapZ = this.getMapCoord(chunkAmount, playerZ);
-        final boolean zooming = (int) Minimap.zoom != Minimap.zoom;
-        final ByteBuffer buffer = Minimap.mapTexture.getBuffer(bufferSize);
-        if (mapX != Minimap.mapUpdateX || mapZ != Minimap.mapUpdateZ || zooming || !retryIfError) {
-            if (!Minimap.frameIsUpdating) {
-                Minimap.frameIsUpdating = true;
-                this.updateMapFrame(bufferSize, partial);
-                Minimap.frameIsUpdating = false;
-                buffer.put(this.bytes);
-                buffer.flip();
-                Minimap.bufferSizeToUpdate = -1;
-                Minimap.frameUpdateNeeded = false;
-            } else {
-                offsetX += 16 * (mapX - Minimap.mapUpdateX);
-                offsetZ += 16 * (mapZ - Minimap.mapUpdateZ);
+        try {
+            final int chunkAmount = getLoadSide();
+            final int mapW = chunkAmount * 16;
+            final double playerX = getEntityX(mc.thePlayer, partial);
+            final double playerZ = getEntityZ(mc.thePlayer, partial);
+            final int xFloored = myFloor(playerX);
+            final int zFloored = myFloor(playerZ);
+            int offsetX = xFloored & 0xF;
+            int offsetZ = zFloored & 0xF;
+            final int mapX = this.getMapCoord(chunkAmount, playerX);
+            final int mapZ = this.getMapCoord(chunkAmount, playerZ);
+            final boolean zooming = (int) Minimap.zoom != Minimap.zoom;
+            final ByteBuffer buffer = Minimap.mapTexture.getBuffer(bufferSize);
+            if (mapX != Minimap.mapUpdateX || mapZ != Minimap.mapUpdateZ || zooming || !retryIfError) {
+                if (!Minimap.frameIsUpdating) {
+                    Minimap.frameIsUpdating = true;
+                    this.updateMapFrame(bufferSize, partial);
+                    Minimap.frameIsUpdating = false;
+                    buffer.put(this.bytes);
+                    buffer.flip();
+                    Minimap.bufferSizeToUpdate = -1;
+                    Minimap.frameUpdateNeeded = false;
+                } else {
+                    offsetX += 16 * (mapX - Minimap.mapUpdateX);
+                    offsetZ += 16 * (mapZ - Minimap.mapUpdateZ);
+                }
             }
+
+            Minimap.scalingFrameBuffer.bindFramebuffer(true);
+            GL11.glClear(16640);
+            GL11.glEnable(3553);
+            RenderHelper.disableStandardItemLighting();
+            if (!tryBindTextureBuffer(buffer, bufferSize, retryIfError)) {
+                Minimap.loadedFBO = false;
+                return;
+            }
+
+            if (!zooming) {
+                GL11.glTexParameteri(3553, 10240, 9728);
+            } else {
+                GL11.glTexParameteri(3553, 10240, 9729);
+            }
+            GlStateManager.clear(256);
+            GlStateManager.matrixMode(5889);
+            GL11.glPushMatrix();
+            GlStateManager.loadIdentity();
+            GlStateManager.ortho(0.0, 512.0, 512.0, 0.0, 1000.0, 3000.0);
+            GlStateManager.matrixMode(5888);
+            GL11.glPushMatrix();
+            try {
+                GlStateManager.loadIdentity();
+
+                double xInsidePixel = getEntityX(mc.thePlayer, partial) - xFloored;
+                if (xInsidePixel < 0.0) {
+                    ++xInsidePixel;
+                }
+                double zInsidePixel = getEntityZ(mc.thePlayer, partial) - zFloored;
+                if (zInsidePixel < 0.0) {
+                    ++zInsidePixel;
+                }
+                zInsidePixel = 1.0 - zInsidePixel;
+                final float halfW = mapW / 2.0f;
+                final float halfWView = viewW / 2.0f;
+                final float angle = (float) (90.0 - getRenderAngle());
+                GlStateManager.translate(256.0f, 256.0f, -2000.0f);
+                GlStateManager.scale(Minimap.zoom, Minimap.zoom, 1.0);
+                drawMyTexturedModalRect(-halfW - offsetX + 8.0f, -halfW - offsetZ + 7.0f, mapW + offsetX, mapW + offsetZ, bufferSize);
+                Minimap.scalingFrameBuffer.unbindFramebuffer();
+                Minimap.rotationFrameBuffer.bindFramebuffer(false);
+                GL11.glClear(16640);
+                Minimap.scalingFrameBuffer.bindFramebufferTexture();
+                GlStateManager.loadIdentity();
+                GL11.glTexParameteri(3553, 10240, 9729);
+                GL11.glTexParameteri(3553, 10241, 9729);
+                GlStateManager.translate(halfWView + 0.5f, 511.5f - halfWView, -2000.0f);
+                GL11.glRotatef(angle, 0.0f, 0.0f, 1.0f);
+                GL11.glPushMatrix();
+                try {
+                    GlStateManager.translate(-xInsidePixel * Minimap.zoom, -zInsidePixel * Minimap.zoom, 0.0);
+                    GlStateManager.disableBlend();
+                    GL11.glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+                    drawMyTexturedModalRect(-256.0f, -256.0f, 512.0f, 512.0f, 512.0f);
+                } finally {
+                    GL11.glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+                    GL11.glPopMatrix();
+                }
+
+                GL11.glTexParameteri(3553, 10240, 9729);
+                GL11.glTexParameteri(3553, 10241, 9729);
+                GlStateManager.enableBlend();
+                GL14.glBlendFuncSeparate(770, 771, 1, 771);
+                GL11.glTexParameteri(3553, 10240, 9728);
+                GL11.glTexParameteri(3553, 10241, 9728);
+                Minimap.rotationFrameBuffer.unbindFramebuffer();
+                GL11.glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+                GlStateManager.disableBlend();
+            } finally {
+                GlStateManager.matrixMode(5889);
+                GL11.glPopMatrix();
+                GlStateManager.matrixMode(5888);
+                GL11.glPopMatrix();
+            }
+        } finally {
+            Minimap.updatePause = false;
         }
-        Minimap.scalingFrameBuffer.bindFramebuffer(true);
-        GL11.glClear(16640);
-        GL11.glEnable(3553);
-        RenderHelper.disableStandardItemLighting();
+    }
+
+    private boolean tryBindTextureBuffer(ByteBuffer buffer, int bufferSize, boolean retryIfError) {
         try {
             bindTextureBuffer(buffer, bufferSize, bufferSize, Minimap.mapTexture.getGlTextureId());
-        } catch (Exception e) {
-            if (retryIfError) {
-                System.out.println("Error when binding texture buffer. Retrying...");
-                this.renderFrameToFBO(bufferSize, viewW, sizeFix, partial, false);
-            } else {
-                System.out.println("Error after retrying... :( Please report to Xaero96 on MinecraftForum of PlanetMinecraft!");
+            return true;
+        } catch (Exception firstException) {
+            ClientLogger.warn("Failed to bind minimap texture buffer" + (retryIfError ? ", retrying once" : ""));
+            if (!retryIfError) {
+                return false;
+            }
+            try {
+                bindTextureBuffer(buffer, bufferSize, bufferSize, Minimap.mapTexture.getGlTextureId());
+                return true;
+            } catch (Exception secondException) {
+                ClientLogger.error("Failed to bind minimap texture buffer after retry");
+                return false;
             }
         }
-
-        if (!zooming) {
-            GL11.glTexParameteri(3553, 10240, 9728);
-        } else {
-            GL11.glTexParameteri(3553, 10240, 9729);
-        }
-        GlStateManager.clear(256);
-        GlStateManager.matrixMode(5889);
-        GL11.glPushMatrix();
-        GlStateManager.loadIdentity();
-        GlStateManager.ortho(0.0, 512.0, 512.0, 0.0, 1000.0, 3000.0);
-        GlStateManager.matrixMode(5888);
-        GL11.glPushMatrix();
-        GlStateManager.loadIdentity();
-
-        double xInsidePixel = getEntityX(mc.thePlayer, partial) - xFloored;
-        if (xInsidePixel < 0.0) {
-            ++xInsidePixel;
-        }
-        double zInsidePixel = getEntityZ(mc.thePlayer, partial) - zFloored;
-        if (zInsidePixel < 0.0) {
-            ++zInsidePixel;
-        }
-        zInsidePixel = 1.0 - zInsidePixel;
-        final float halfW = mapW / 2.0f;
-        final float halfWView = viewW / 2.0f;
-        final float angle = (float) (90.0 - getRenderAngle());
-        GlStateManager.translate(256.0f, 256.0f, -2000.0f);
-        GlStateManager.scale(Minimap.zoom, Minimap.zoom, 1.0);
-        drawMyTexturedModalRect(-halfW - offsetX + 8.0f, -halfW - offsetZ + 7.0f, mapW + offsetX, mapW + offsetZ, bufferSize);
-        Minimap.scalingFrameBuffer.unbindFramebuffer();
-        Minimap.rotationFrameBuffer.bindFramebuffer(false);
-        GL11.glClear(16640);
-        Minimap.scalingFrameBuffer.bindFramebufferTexture();
-        GlStateManager.loadIdentity();
-        GL11.glTexParameteri(3553, 10240, 9729);
-        GL11.glTexParameteri(3553, 10241, 9729);
-        GlStateManager.translate(halfWView + 0.5f, 511.5f - halfWView, -2000.0f);
-        GL11.glRotatef(angle, 0.0f, 0.0f, 1.0f);
-        GL11.glPushMatrix();
-        GlStateManager.translate(-xInsidePixel * Minimap.zoom, -zInsidePixel * Minimap.zoom, 0.0);
-        GlStateManager.disableBlend();
-        GL11.glColor4f(1.0f, 1.0f, 1.0f, 100.0f);
-        drawMyTexturedModalRect(-256.0f, -256.0f, 512.0f, 512.0f, 512.0f);
-        GL11.glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
-        GL11.glPopMatrix();
-
-        GL11.glTexParameteri(3553, 10240, 9729);
-        GL11.glTexParameteri(3553, 10241, 9729);
-
-        GlStateManager.enableBlend();
-        GL14.glBlendFuncSeparate(770, 771, 1, 771);
-        GL11.glTexParameteri(3553, 10240, 9728);
-        GL11.glTexParameteri(3553, 10241, 9728);
-        Minimap.rotationFrameBuffer.unbindFramebuffer();
-        GL11.glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
-        GlStateManager.disableBlend();
-        Minimap.updatePause = false;
-        GlStateManager.matrixMode(5889);
-        GL11.glPopMatrix();
-        GlStateManager.matrixMode(5888);
-        GL11.glPopMatrix();
     }
 
     private static void drawMyTexturedModalRect(final float x, final float y, final float width, final float height, final float factor) {
@@ -822,13 +855,14 @@ public class Minimap {
         public void run() {
             int updateChunkX = 0;
             int updateChunkZ = 0;
-            while (((IMinecraft) mc).arch$getRunning()) {
+            while (((IMinecraft) mc).arch$getRunning() && !Thread.currentThread().isInterrupted()) {
                 if(!MiniMap.using) {
                     try {
                         Thread.sleep(1000L);
                         continue;
                     } catch (InterruptedException e) {
-                        throw new RuntimeException(e);
+                        Thread.currentThread().interrupt();
+                        break;
                     }
                 }
                 final long before = System.currentTimeMillis();
@@ -912,8 +946,11 @@ public class Minimap {
                             Minimap.bufferSizeToUpdate = -1;
                         }
                     }
+                } catch (InterruptedException interruptedException) {
+                    Thread.currentThread().interrupt();
+                    break;
                 } catch (Exception e2) {
-                    e2.printStackTrace();
+                    ClientLogger.error("Minimap loader failed");
                     Minimap.frameIsUpdating = false;
                 }
                 final int passed = (int) (System.currentTimeMillis() - before);
@@ -924,7 +961,8 @@ public class Minimap {
                         Thread.sleep(1L);
                     }
                 } catch (InterruptedException e3) {
-                    e3.printStackTrace();
+                    Thread.currentThread().interrupt();
+                    break;
                 }
             }
         }

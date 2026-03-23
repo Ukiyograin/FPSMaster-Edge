@@ -14,7 +14,6 @@ import top.fpsmaster.features.impl.interfaces.ClientSettings;
 import top.fpsmaster.features.manager.Category;
 import top.fpsmaster.features.manager.Module;
 import top.fpsmaster.font.impl.UFontRenderer;
-import net.minecraft.client.Minecraft;
 import top.fpsmaster.modules.logger.ClientLogger;
 import top.fpsmaster.ui.click.MainPanel;
 import top.fpsmaster.utils.core.Utility;
@@ -43,8 +42,17 @@ public class Component {
 
     public Position position = Position.LT;
 
+    @SuppressWarnings("unchecked")
     public Component(Class<?> clazz) {
-        Module module = FPSMaster.moduleManager.getModule(clazz);
+        Module module;
+        try {
+            module = FPSMaster.moduleManager.getModule((Class<? extends Module>) clazz);
+        } catch (IllegalStateException exception) {
+            ClientLogger.warn("Missing interface module for component: " + clazz.getName());
+            this.mod = new InterfaceModule(clazz.getSimpleName(), Category.Interface);
+            this.mod.set(false);
+            return;
+        }
         if (module instanceof InterfaceModule) {
             this.mod = (InterfaceModule) module;
             return;

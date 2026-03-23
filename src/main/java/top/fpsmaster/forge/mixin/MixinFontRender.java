@@ -10,6 +10,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+import top.fpsmaster.FPSMaster;
 import top.fpsmaster.features.impl.optimizes.Performance;
 import top.fpsmaster.font.FontRendererHook;
 import top.fpsmaster.modules.client.GlobalTextFilter;
@@ -71,6 +72,14 @@ public abstract class MixinFontRender {
             if (this.patcher$fontRendererHook.renderStringAtPos(text, shadow)) {
                 ci.cancel();
             }
+        }
+    }
+
+    @Inject(method = "onResourceManagerReload", at = @At("HEAD"))
+    private void patcher$releaseFontCaches(CallbackInfo ci) {
+        this.patcher$fontRendererHook.release();
+        if (FPSMaster.fontManager != null) {
+            FPSMaster.fontManager.load();
         }
     }
 

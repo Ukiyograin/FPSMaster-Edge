@@ -20,15 +20,28 @@ import java.util.List;
 public class ModuleManager {
     public List<Module> modules = new ArrayList<>();
     public MainPanel mainPanel = new MainPanel();
+    private boolean initialized;
 
-    public Module getModule(Class<?> mod) {
+    public <T extends Module> T getModule(Class<T> mod) {
+        for (Module module : modules) {
+            if (module.getClass() == mod) {
+                return mod.cast(module);
+            }
+        }
+        throw new IllegalStateException("Missing module: " + mod.getName());
+    }
+
+    public Module getModule(Class<?> mod, boolean unused) {
         for (Module module : modules) {
             if (module.getClass() == mod) {
                 return module;
             }
         }
-        ClientLogger.warn("Missing module: " + mod.getName());
-        return new Module("missing module", "mission", Category.Utility);
+        throw new IllegalStateException("Missing module: " + mod.getName());
+    }
+
+    public <T extends Module> T requireModule(Class<T> mod) {
+        return getModule(mod);
     }
 
     @Subscribe
@@ -57,6 +70,11 @@ public class ModuleManager {
     }
 
     public void init() {
+        if (initialized) {
+            ClientLogger.warn("ModuleManager already initialized");
+            return;
+        }
+        initialized = true;
         // Register listener
         EventDispatcher.registerListener(this);
         // Add modules

@@ -41,11 +41,8 @@ public class EventDispatcher {
                     ClientLogger.warn("Failed to dispatch event " + event.getClass().getSimpleName() + " to listener " + listener.getLog());
                     if (e instanceof Exception) {
                         ExceptionHandler.handleModuleException((Exception) e, "Failed to dispatch event " + event.getClass().getSimpleName());
-                        e.printStackTrace();
                     } else {
-                        // For non-Exception Throwables, we still need to log them
                         ClientLogger.error("Non-Exception Throwable: " + e.getMessage());
-                        e.printStackTrace();
                     }
                 }
             }

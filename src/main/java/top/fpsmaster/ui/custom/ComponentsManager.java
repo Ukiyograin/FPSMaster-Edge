@@ -1,19 +1,14 @@
 package top.fpsmaster.ui.custom;
 
-import net.minecraft.client.gui.ScaledResolution;
 import org.lwjgl.opengl.GL11;
 import top.fpsmaster.features.impl.InterfaceModule;
-import top.fpsmaster.features.impl.interfaces.ClientSettings;
 import top.fpsmaster.ui.custom.impl.*;
 import top.fpsmaster.utils.core.Utility;
 import top.fpsmaster.utils.render.gui.GuiScale;
-import top.fpsmaster.utils.render.gui.UiScale;
 import top.fpsmaster.modules.logger.ClientLogger;
 
 import java.util.ArrayList;
 import java.util.function.Supplier;
-
-import static top.fpsmaster.utils.core.Utility.mc;
 
 public class ComponentsManager {
     // List to hold all components
@@ -48,7 +43,6 @@ public class ComponentsManager {
             components.add(supplier.get());
         } catch (Throwable throwable) {
             ClientLogger.error("Failed to initialize component: " + name);
-            throwable.printStackTrace();
         }
     }
 
@@ -65,10 +59,7 @@ public class ComponentsManager {
         GL11.glPushMatrix();
 
         // Adjust mouse coordinates if fixed scale is enabled
-        ScaledResolution sr = new ScaledResolution(Utility.mc);
-        int scaleFactor = sr.getScaleFactor();
-        float guiWidth = sr.getScaledWidth() / 2f * scaleFactor;
-        float guiHeight = sr.getScaledHeight() / 2f * scaleFactor;
+        int scaleFactor = new net.minecraft.client.gui.ScaledResolution(Utility.mc).getScaleFactor();
 
         mouseX = mouseX * scaleFactor / 2;
         mouseY = mouseY * scaleFactor / 2;
@@ -83,7 +74,7 @@ public class ComponentsManager {
                 try {
                     component.display(finalMouseX, finalMouseY);
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    ClientLogger.error("Failed to render component: " + component.mod.name);
                 }
             }
         });

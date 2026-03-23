@@ -1,14 +1,36 @@
 package top.fpsmaster.modules.client.thread;
 
-import java.util.concurrent.*;
+import top.fpsmaster.modules.logger.ClientLogger;
 
-// 此工具只应用于只执行一次，或者执行时间可确定的任务，对于重复性或者不确定任务，应该各自处理其逻辑，包括重复线程任务以及超时时间等，而非直接再此处执行。
-// 此工具不保证新的任务可以立即执行，可能会因为其他线程延迟执行。
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.Callable;
+import java.util.concurrent.Future;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+
 public class ClientThreadPool {
-    private final ExecutorService executorService;
+    private static final int DEFAULT_QUEUE_CAPACITY = 256;
+
+    private final ThreadPoolExecutor executorService;
 
     public ClientThreadPool(int threadCount) {
-        executorService = Executors.newFixedThreadPool(threadCount);
+        int normalizedThreadCount = Math.max(1, threadCount);
+        AtomicInteger threadIndex = new AtomicInteger(1);
+        executorService = new ThreadPoolExecutor(
+                normalizedThreadCount,
+                normalizedThreadCount,
+                30L,
+                TimeUnit.SECONDS,
+                new ArrayBlockingQueue<>(DEFAULT_QUEUE_CAPACITY),
+                runnable -> {
+                    Thread thread = new Thread(runnable, "FPSMaster-Async-" + threadIndex.getAndIncrement());
+                    thread.setDaemon(true);
+                    return thread;
+                },
+                (runnable, executor) -> ClientLogger.warn("Async task rejected because the queue is full")
+        );
+        executorService.allowCoreThreadTimeOut(true);
     }
 
     public <T> Future<T> execute(Callable<T> task) {
@@ -22,7 +44,7 @@ public class ClientThreadPool {
     public void close() {
         executorService.shutdown();
         try {
-            if (!executorService.awaitTermination(60, TimeUnit.SECONDS)) {
+            if (!executorService.awaitTermination(10, TimeUnit.SECONDS)) {
                 executorService.shutdownNow();
             }
         } catch (InterruptedException ex) {

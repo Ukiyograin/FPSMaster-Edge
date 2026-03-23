@@ -1,5 +1,6 @@
 package top.fpsmaster.font;
 
+import top.fpsmaster.font.FontRendererHook;
 import top.fpsmaster.font.impl.UFontRenderer;
 
 import java.util.HashMap;
@@ -17,6 +18,8 @@ public class FontManager {
     public UFontRenderer s40;
 
     public void load(){
+        releaseFonts();
+        fonts.clear();
         s14 = new UFontRenderer("NotoSansSC-Regular",14);
         s16 = new UFontRenderer("NotoSansSC-Regular",16);
         s18 = new UFontRenderer("NotoSansSC-Regular",18);
@@ -26,6 +29,8 @@ public class FontManager {
         s28 = new UFontRenderer("NotoSansSC-Regular",28);
         s36 = new UFontRenderer("NotoSansSC-Regular",36);
         s40 = new UFontRenderer("NotoSansSC-Regular",40);
+        EnhancedFontRenderer.releaseAllInstances();
+        FontRendererHook.forceRefresh = true;
     }
 
     HashMap<Integer, UFontRenderer> fonts = new HashMap<>();
@@ -37,6 +42,27 @@ public class FontManager {
         UFontRenderer harmonyBold = new UFontRenderer("NotoSansSC-Regular", size);
         fonts.put(size, harmonyBold);
         return harmonyBold;
+    }
+
+    private void releaseFonts() {
+        destroyFont(s14);
+        destroyFont(s16);
+        destroyFont(s18);
+        destroyFont(s20);
+        destroyFont(s22);
+        destroyFont(s24);
+        destroyFont(s28);
+        destroyFont(s36);
+        destroyFont(s40);
+        for (UFontRenderer font : fonts.values()) {
+            destroyFont(font);
+        }
+    }
+
+    private void destroyFont(UFontRenderer font) {
+        if (font != null) {
+            font.destroy();
+        }
     }
 }
 

@@ -25,6 +25,8 @@ import top.fpsmaster.utils.render.shader.KawaseBlur;
 import static top.fpsmaster.utils.core.Utility.mc;
 
 public class GlobalListener {
+    private long lastFlushAt;
+
     public void init() {
         EventDispatcher.registerListener(this);
     }
@@ -51,32 +53,15 @@ public class GlobalListener {
             FPSMaster.configManager.saveConfigQuietly("default");
         }
     }
-
-
-    Thread tickThread;
-
     @Subscribe
     public void onTick(EventTick e) {
-        if (tickThread == null || !tickThread.isAlive()) {
-            tickThread = new Thread(() -> {
-                try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException ex) {
-                    throw new RuntimeException(ex);
-                }
-//                if (MusicPlayer.isPlaying && MusicPlayer.getPlayProgress() > 0.999 && (Music.downloadThread == null || !Music.downloadThread.isAlive())) {
-//                    MusicPlayer.playList.next();
-//                    try {
-//                        Thread.sleep(20000);
-//                    } catch (InterruptedException ex) {
-//                        throw new RuntimeException(ex);
-//                    }
-//                }
-                if (mc != null && mc.theWorld != null) {
-                    Utility.flush();
-                }
-            });
-            tickThread.start();
+        long now = System.currentTimeMillis();
+        if (now - lastFlushAt < 1000L) {
+            return;
+        }
+        lastFlushAt = now;
+        if (mc != null && mc.theWorld != null) {
+            Utility.flush();
         }
     }
 

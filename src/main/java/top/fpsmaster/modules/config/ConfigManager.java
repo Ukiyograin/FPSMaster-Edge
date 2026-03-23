@@ -54,12 +54,12 @@ public class ConfigManager {
         }
         try {
             saveConfig(name);
-        } catch (FileException ignored) {
+        } catch (FileException exception) {
+            ClientLogger.error("Failed to save config quietly: " + name);
         }
     }
 
     public void saveConfig(String name) throws FileException {
-        System.out.println("[ConfigManager] Saving config: " + name + ", oobeCompleted = " + configure.oobeCompleted);
         JsonObject json = new JsonObject();
         json.addProperty("schemaVersion", SCHEMA_VERSION);
         JsonObject client = new JsonObject();
@@ -192,7 +192,6 @@ public class ConfigManager {
                 configure.oobeCompleted = client.has("oobeCompleted")
                         ? client.get("oobeCompleted").getAsBoolean()
                         : FPSMaster.defaultConfigExistedBeforeLoad;
-                System.out.println("[ConfigManager] Loaded oobeCompleted = " + configure.oobeCompleted + " (has field: " + client.has("oobeCompleted") + ", defaultConfigExistedBeforeLoad: " + FPSMaster.defaultConfigExistedBeforeLoad + ")");
                 configure.antiCheatEnabled = !client.has("antiCheatEnabled") || client.get("antiCheatEnabled").getAsBoolean();
                 configure.anonymousDataEnabled = !client.has("anonymousDataEnabled") || client.get("anonymousDataEnabled").getAsBoolean();
                 if (client.has("classicBackgroundColor")) {
@@ -248,7 +247,6 @@ public class ConfigManager {
                         targetComponent.position = Position.valueOf(component.get("position").getAsString());
                     } catch (Throwable throwable) {
                         ClientLogger.error("Failed to load one component entry from config");
-                        throwable.printStackTrace();
                     }
                 }
             }
@@ -294,6 +292,7 @@ public class ConfigManager {
                                         ((BindSetting) setting).setValue(value.getAsInt());
                                     } else if (setting instanceof MultipleItemSetting && "multiItem".equals(type)) {
                                         MultipleItemSetting multipleItemSetting = (MultipleItemSetting) setting;
+                                        multipleItemSetting.getValue().clear();
                                         for (JsonElement itemElement : value.getAsJsonArray()) {
                                             JsonObject item = itemElement.getAsJsonObject();
                                             int id = item.get("id").getAsInt();
@@ -304,13 +303,11 @@ public class ConfigManager {
                                 }
                             } catch (Throwable throwable) {
                                 ClientLogger.error("Failed to load setting from config: " + module.name + "/" + setting.name);
-                                throwable.printStackTrace();
                             }
                         }
                     }
                 } catch (Throwable throwable) {
                     ClientLogger.error("Failed to load module from config: " + module.name);
-                    throwable.printStackTrace();
                 }
             }
         } finally {
@@ -394,8 +391,8 @@ public class ConfigManager {
     }
 
     private void openDefaultModules() {
-        FPSMaster.moduleManager.getModule(Performance.class).set(true);
-        FPSMaster.moduleManager.getModule(OldAnimations.class).set(true);
-        FPSMaster.moduleManager.getModule(ItemPhysics.class).set(true);
+        FPSMaster.moduleManager.requireModule(Performance.class).set(true);
+        FPSMaster.moduleManager.requireModule(OldAnimations.class).set(true);
+        FPSMaster.moduleManager.requireModule(ItemPhysics.class).set(true);
     }
 }

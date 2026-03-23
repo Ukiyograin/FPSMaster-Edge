@@ -42,54 +42,61 @@ public class TargetDisplay extends InterfaceModule {
 
     private void drawCircle(Entity entity, double rad, boolean shade) {
         GL11.glPushMatrix();
-        GL11.glEnable(GL11.GL_LINE_SMOOTH);
-        GL11.glEnable(GL11.GL_POINT_SMOOTH);
-        GL11.glDisable(GL11.GL_TEXTURE_2D);
-        GL11.glEnable(GL11.GL_BLEND);
-        GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
-        GL11.glHint(GL11.GL_LINE_SMOOTH_HINT, GL11.GL_NICEST);
-        GL11.glHint(GL11.GL_POLYGON_SMOOTH_HINT, GL11.GL_NICEST);
-        GL11.glHint(GL11.GL_POINT_SMOOTH_HINT, GL11.GL_NICEST);
-        GlStateManager.depthMask(false);
-        GlStateManager.disableLighting();
-        GlStateManager.alphaFunc(GL11.GL_GREATER, 0.0f);
-        if (shade) GL11.glShadeModel(GL11.GL_SMOOTH);
-        GlStateManager.disableCull();
-        GL11.glBegin(GL11.GL_TRIANGLE_STRIP);
-        Minecraft mc = Minecraft.getMinecraft();
-        float partialTicks = ((IMinecraft) mc).arch$getTimer().renderPartialTicks;
-        IRenderManager renderManager = (IRenderManager) mc.getRenderManager();
-        double x = entity.lastTickPosX + (entity.posX - entity.lastTickPosX) * partialTicks - renderManager.renderPosX();
-        double y = entity.lastTickPosY + (entity.posY - entity.lastTickPosY) * partialTicks - renderManager.renderPosY() + Math.sin(System.currentTimeMillis() / 2E+2) + 1;
-        double z = entity.lastTickPosZ + (entity.posZ - entity.lastTickPosZ) * partialTicks - renderManager.renderPosZ();
-        Color c;
-        GL11.glColor4f(1f, 0f, 0f, 0f);
-        float i = 0f;
-        while (i < Math.PI * 2) {
-            double vecX = x + rad * Math.cos(i);
-            double vecZ = z + rad * Math.sin(i);
-            c = espColor.getColor();
+        try {
+            GL11.glEnable(GL11.GL_LINE_SMOOTH);
+            GL11.glEnable(GL11.GL_POINT_SMOOTH);
+            GL11.glDisable(GL11.GL_TEXTURE_2D);
+            GL11.glEnable(GL11.GL_BLEND);
+            GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
+            GL11.glHint(GL11.GL_LINE_SMOOTH_HINT, GL11.GL_NICEST);
+            GL11.glHint(GL11.GL_POLYGON_SMOOTH_HINT, GL11.GL_NICEST);
+            GL11.glHint(GL11.GL_POINT_SMOOTH_HINT, GL11.GL_NICEST);
+            GlStateManager.depthMask(false);
+            GlStateManager.disableLighting();
+            GlStateManager.disableCull();
+            GlStateManager.alphaFunc(GL11.GL_GREATER, 0.0f);
             if (shade) {
-                GL11.glColor4f(c.getRed() / 255f, c.getGreen() / 255f, c.getBlue() / 255f, 0f);
-                GL11.glVertex3d(vecX, y - Math.cos(System.currentTimeMillis() / 2E+2) / 2.0f, vecZ);
-                GL11.glColor4f(c.getRed() / 255f, c.getGreen() / 255f, c.getBlue() / 255f, 0.75f);
+                GL11.glShadeModel(GL11.GL_SMOOTH);
             }
-            GL11.glVertex3d(vecX, y, vecZ);
-            i += (float) (Math.PI * 2 / 64f);
+            GL11.glBegin(GL11.GL_TRIANGLE_STRIP);
+            Minecraft mc = Minecraft.getMinecraft();
+            float partialTicks = ((IMinecraft) mc).arch$getTimer().renderPartialTicks;
+            IRenderManager renderManager = (IRenderManager) mc.getRenderManager();
+            double x = entity.lastTickPosX + (entity.posX - entity.lastTickPosX) * partialTicks - renderManager.renderPosX();
+            double y = entity.lastTickPosY + (entity.posY - entity.lastTickPosY) * partialTicks - renderManager.renderPosY() + Math.sin(System.currentTimeMillis() / 2E+2) + 1;
+            double z = entity.lastTickPosZ + (entity.posZ - entity.lastTickPosZ) * partialTicks - renderManager.renderPosZ();
+            Color c;
+            GL11.glColor4f(1f, 0f, 0f, 0f);
+            float i = 0f;
+            while (i < Math.PI * 2) {
+                double vecX = x + rad * Math.cos(i);
+                double vecZ = z + rad * Math.sin(i);
+                c = espColor.getColor();
+                if (shade) {
+                    GL11.glColor4f(c.getRed() / 255f, c.getGreen() / 255f, c.getBlue() / 255f, 0f);
+                    GL11.glVertex3d(vecX, y - Math.cos(System.currentTimeMillis() / 2E+2) / 2.0f, vecZ);
+                    GL11.glColor4f(c.getRed() / 255f, c.getGreen() / 255f, c.getBlue() / 255f, 0.75f);
+                }
+                GL11.glVertex3d(vecX, y, vecZ);
+                i += (float) (Math.PI * 2 / 64f);
+            }
+            GL11.glEnd();
+        } finally {
+            if (shade) {
+                GL11.glShadeModel(GL11.GL_FLAT);
+            }
+            GlStateManager.depthMask(true);
+            GlStateManager.enableLighting();
+            GL11.glEnable(GL11.GL_DEPTH_TEST);
+            GlStateManager.alphaFunc(GL11.GL_GREATER, 0.1f);
+            GlStateManager.enableCull();
+            GL11.glDisable(GL11.GL_LINE_SMOOTH);
+            GL11.glDisable(GL11.GL_POINT_SMOOTH);
+            GL11.glEnable(GL11.GL_TEXTURE_2D);
+            GL11.glDisable(GL11.GL_BLEND);
+            GL11.glColor4f(1f, 1f, 1f, 1f);
+            GL11.glPopMatrix();
         }
-        GL11.glEnd();
-        if (shade) GL11.glShadeModel(GL11.GL_FLAT);
-        GlStateManager.depthMask(true);
-        GlStateManager.enableLighting();
-        GL11.glEnable(GL11.GL_DEPTH_TEST);
-        GlStateManager.alphaFunc(GL11.GL_GREATER, 0.1f);
-        GlStateManager.enableCull();
-        GL11.glDisable(GL11.GL_LINE_SMOOTH);
-        GL11.glEnable(GL11.GL_POINT_SMOOTH);
-        GL11.glEnable(GL11.GL_TEXTURE_2D);
-        GL11.glEnable(GL11.GL_BLEND);
-        GL11.glPopMatrix();
-        GL11.glColor3f(1f, 1f, 1f);
     }
 
     @Subscribe

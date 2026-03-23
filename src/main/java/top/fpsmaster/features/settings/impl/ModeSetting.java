@@ -19,27 +19,45 @@ public class ModeSetting extends Setting<Integer> {
     }
 
     public void cycle() {
-        setValue((getValue() + 1) % modes.length);
+        setValue(normalizeIndex(getValue() + 1));
     }
 
     public String getMode(int num) {
-        return modes[num - 1];
+        return modes[normalizeIndex(num - 1)];
     }
 
     public boolean isMode(String mode) {
-        return Objects.equals(modes[getValue()], mode);
+        return Objects.equals(modes[normalizeIndex(getValue())], mode);
     }
 
     public String getModeName() {
-        return modes[getValue()];
+        return modes[normalizeIndex(getValue())];
     }
 
     public int getMode() {
-        return getValue();
+        return normalizeIndex(getValue());
     }
 
     public int getModesSize() {
         return modes.length;
+    }
+
+    @Override
+    public void setValue(Integer value) {
+        super.setValue(normalizeIndex(value == null ? 0 : value));
+    }
+
+    private int normalizeIndex(int index) {
+        if (modes.length == 0) {
+            return 0;
+        }
+        if (index < 0) {
+            return 0;
+        }
+        if (index >= modes.length) {
+            return modes.length - 1;
+        }
+        return index;
     }
 }
 

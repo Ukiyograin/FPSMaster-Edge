@@ -125,6 +125,7 @@ public class MotionBlur extends Module {
     public void onDisable() {
         super.onDisable();
         Minecraft.getMinecraft().entityRenderer.stopUseShader();
+        releaseBuffers();
     }
 
     public static void blur(float multiplier) {
@@ -132,48 +133,73 @@ public class MotionBlur extends Module {
             ScaledResolution sr = new ScaledResolution(Minecraft.getMinecraft());
             int width = Minecraft.getMinecraft().getFramebuffer().framebufferWidth;
             int height = Minecraft.getMinecraft().getFramebuffer().framebufferHeight;
+            float scaledWidth = width / (float) sr.getScaleFactor();
+            float scaledHeight = height / (float) sr.getScaleFactor();
 
             GlStateManager.matrixMode(GL11.GL_PROJECTION);
-            GlStateManager.loadIdentity();
-            GlStateManager.ortho(0.0, (double) width / sr.getScaleFactor(), (double) height / sr.getScaleFactor(), 0.0, 2000.0, 4000.0);
+            GL11.glPushMatrix();
             GlStateManager.matrixMode(GL11.GL_MODELVIEW);
-            GlStateManager.loadIdentity();
-            GlStateManager.translate(0f, 0f, -2000f);
+            GL11.glPushMatrix();
+            try {
+                GlStateManager.matrixMode(GL11.GL_PROJECTION);
+                GlStateManager.loadIdentity();
+                GlStateManager.ortho(0.0, scaledWidth, scaledHeight, 0.0, 2000.0, 4000.0);
+                GlStateManager.matrixMode(GL11.GL_MODELVIEW);
+                GlStateManager.loadIdentity();
+                GlStateManager.translate(0f, 0f, -2000f);
 
-            blurBufferMain = checkFramebufferSizes(blurBufferMain, width, height);
-            blurBufferInto = checkFramebufferSizes(blurBufferInto, width, height);
+                blurBufferMain = checkFramebufferSizes(blurBufferMain, width, height);
+                blurBufferInto = checkFramebufferSizes(blurBufferInto, width, height);
 
-            blurBufferInto.framebufferClear();
-            blurBufferInto.bindFramebuffer(true);
+                blurBufferInto.framebufferClear();
+                blurBufferInto.bindFramebuffer(true);
 
-            OpenGlHelper.glBlendFunc(770, 771, 0, 1); // GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA
-            GlStateManager.disableLighting();
-            GlStateManager.disableFog();
-            GlStateManager.disableBlend();
+                OpenGlHelper.glBlendFunc(770, 771, 0, 1);
+                GlStateManager.disableLighting();
+                GlStateManager.disableFog();
+                GlStateManager.disableBlend();
 
-            Minecraft.getMinecraft().getFramebuffer().bindFramebufferTexture();
-            GlStateManager.color(1f, 1f, 1f, 1f);
-            drawTexturedRectNoBlend(0f, 0f, width / sr.getScaleFactor(), height / sr.getScaleFactor(),
-                    0f, 1f, 0f, 1f, 9728);
+                Minecraft.getMinecraft().getFramebuffer().bindFramebufferTexture();
+                GlStateManager.color(1f, 1f, 1f, 1f);
+                drawTexturedRectNoBlend(0f, 0f, scaledWidth, scaledHeight, 0f, 1f, 0f, 1f, 9728);
 
-            GlStateManager.enableBlend();
-            blurBufferMain.bindFramebufferTexture();
-            GlStateManager.color(1f, 1f, 1f, multiplier / 10 - 0.1f);
-            drawTexturedRectNoBlend(0f, 0f, width / sr.getScaleFactor(), height / sr.getScaleFactor(),
-                    0f, 1f, 1f, 0f, 9728);
+                GlStateManager.enableBlend();
+                blurBufferMain.bindFramebufferTexture();
+                GlStateManager.color(1f, 1f, 1f, multiplier / 10 - 0.1f);
+                drawTexturedRectNoBlend(0f, 0f, scaledWidth, scaledHeight, 0f, 1f, 1f, 0f, 9728);
 
-            Minecraft.getMinecraft().getFramebuffer().bindFramebuffer(true);
-            blurBufferInto.bindFramebufferTexture();
-            GlStateManager.color(1f, 1f, 1f, 1f);
-            GlStateManager.enableBlend();
-            OpenGlHelper.glBlendFunc(770, 771, 1, 771);
+                Minecraft.getMinecraft().getFramebuffer().bindFramebuffer(true);
+                blurBufferInto.bindFramebufferTexture();
+                GlStateManager.color(1f, 1f, 1f, 1f);
+                GlStateManager.enableBlend();
+                OpenGlHelper.glBlendFunc(770, 771, 1, 771);
+                drawTexturedRectNoBlend(0f, 0f, scaledWidth, scaledHeight, 0f, 1f, 0f, 1f, 9728);
 
-            drawTexturedRectNoBlend(0f, 0f, width / sr.getScaleFactor(), height / sr.getScaleFactor(),
-                    0f, 1f, 0f, 1f, 9728);
+                Framebuffer tempBuff = blurBufferMain;
+                blurBufferMain = blurBufferInto;
+                blurBufferInto = tempBuff;
+            } finally {
+                Minecraft.getMinecraft().getFramebuffer().bindFramebuffer(true);
+                GlStateManager.color(1f, 1f, 1f, 1f);
+                GlStateManager.enableTexture2D();
+                GlStateManager.enableBlend();
+                GlStateManager.matrixMode(GL11.GL_MODELVIEW);
+                GL11.glPopMatrix();
+                GlStateManager.matrixMode(GL11.GL_PROJECTION);
+                GL11.glPopMatrix();
+                GlStateManager.matrixMode(GL11.GL_MODELVIEW);
+            }
+        }
+    }
 
-            Framebuffer tempBuff = blurBufferMain;
-            blurBufferMain = blurBufferInto;
-            blurBufferInto = tempBuff;
+    private static void releaseBuffers() {
+        if (blurBufferMain != null) {
+            blurBufferMain.deleteFramebuffer();
+            blurBufferMain = null;
+        }
+        if (blurBufferInto != null) {
+            blurBufferInto.deleteFramebuffer();
+            blurBufferInto = null;
         }
     }
 }

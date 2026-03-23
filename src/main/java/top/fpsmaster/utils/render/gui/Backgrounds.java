@@ -16,6 +16,7 @@ import org.lwjgl.util.glu.Project;
 import top.fpsmaster.FPSMaster;
 import top.fpsmaster.features.settings.impl.ColorSetting;
 import top.fpsmaster.features.settings.impl.utils.CustomColor;
+import top.fpsmaster.modules.logger.ClientLogger;
 import top.fpsmaster.ui.screens.mainmenu.MainMenu;
 import top.fpsmaster.utils.io.FileUtils;
 import top.fpsmaster.utils.math.anim.AnimMath;
@@ -28,6 +29,7 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import javax.imageio.ImageIO;
 
 import static top.fpsmaster.utils.core.Utility.mc;
@@ -39,6 +41,7 @@ public class Backgrounds {
     private static long initTime = System.currentTimeMillis();
     private static long customBgLastModified = -1L;
     private static boolean customTextureLoaded = false;
+    private static final AtomicBoolean customTextureLoading = new AtomicBoolean(false);
     private static float customImageWidth = 1f;
     private static float customImageHeight = 1f;
     private static final int PANORAMA_FACE_COUNT = 6;
@@ -100,6 +103,7 @@ public class Backgrounds {
                 GL20.glUseProgram(0);
                 GL11.glEnable(GL11.GL_TEXTURE_2D);
                 GL11.glEnable(GL11.GL_ALPHA_TEST);
+                GlStateManager.enableCull();
                 Rects.fill(0f, 0f, scaledGuiWidth, scaledGuiHeight, new Color(26, 59, 109, 60));
             } else {
                 Rects.fill(0f, 0f, scaledGuiWidth, scaledGuiHeight, new Color(0, 0, 0, 255));
@@ -123,14 +127,20 @@ public class Backgrounds {
             textureManager.loadTexture(CUSTOM_BG_LOCATION, textureArt);
             customTextureLoaded = true;
             customBgLastModified = modified;
-
-            try {
-                BufferedImage image = ImageIO.read(file);
-                if (image != null && image.getWidth() > 0 && image.getHeight() > 0) {
-                    customImageWidth = image.getWidth();
-                    customImageHeight = image.getHeight();
-                }
-            } catch (IOException ignored) {
+            if (customTextureLoading.compareAndSet(false, true)) {
+                FPSMaster.async.runnable(() -> {
+                    try {
+                        BufferedImage image = ImageIO.read(file);
+                        if (image != null && image.getWidth() > 0 && image.getHeight() > 0) {
+                            customImageWidth = image.getWidth();
+                            customImageHeight = image.getHeight();
+                        }
+                    } catch (IOException exception) {
+                        ClientLogger.warn("Failed to load custom background metadata");
+                    } finally {
+                        customTextureLoading.set(false);
+                    }
+                });
             }
         }
 
@@ -246,11 +256,34 @@ public class Backgrounds {
         }
     }
 
+    public static void clearCaches() {
+        customTextureLoaded = false;
+        customBgLastModified = -1L;
+        customImageWidth = 1f;
+        customImageHeight = 1f;
+        activePanoramaStyle = DEFAULT_PANORAMA_STYLE;
+        titlePanoramaPaths = createPanoramaPaths(DEFAULT_PANORAMA_STYLE);
+        panoramaTimer = 0;
+        panoramaTimerLastUpdate = System.currentTimeMillis();
+        viewportTexture = null;
+        backgroundTexture = null;
+    }
+
     private static void rotateAndBlurSkybox(int width, int height, int zLevel) {
+        if (backgroundTexture == null || viewportTexture == null) {
+            return;
+        }
+
+        int copyWidth = Math.min(PANORAMA_VIEWPORT_SIZE, Math.max(0, mc.displayWidth));
+        int copyHeight = Math.min(PANORAMA_VIEWPORT_SIZE, Math.max(0, mc.displayHeight));
+        if (copyWidth <= 0 || copyHeight <= 0) {
+            return;
+        }
+
         mc.getTextureManager().bindTexture(backgroundTexture);
         GL11.glTexParameteri(3553, 10241, 9729);
         GL11.glTexParameteri(3553, 10240, 9729);
-        GL11.glCopyTexSubImage2D(3553, 0, 0, 0, 0, 0, PANORAMA_VIEWPORT_SIZE, PANORAMA_VIEWPORT_SIZE);
+        GL11.glCopyTexSubImage2D(3553, 0, 0, 0, 0, 0, copyWidth, copyHeight);
         GlStateManager.enableBlend();
         GlStateManager.tryBlendFuncSeparate(770, 771, 1, 0);
         GlStateManager.colorMask(true, true, true, false);
@@ -275,10 +308,28 @@ public class Backgrounds {
     }
 
     private static void renderSkybox(int width, int height, String style, float partialTicks, int zLevel) {
+        initGui();
+        if (backgroundTexture == null || viewportTexture == null) {
+            Rects.fill(0f, 0f, width, height, new Color(0, 0, 0, 255));
+            return;
+        }
+
+        if (mc.displayWidth <= 0 || mc.displayHeight <= 0) {
+            Rects.fill(0f, 0f, width, height, new Color(0, 0, 0, 255));
+            return;
+        }
+
         ensurePanoramaStyle(style);
         updatePanoramaTimer();
         mc.getFramebuffer().unbindFramebuffer();
-        GlStateManager.viewport(0, 0, PANORAMA_VIEWPORT_SIZE, PANORAMA_VIEWPORT_SIZE);
+        int viewportWidth = Math.min(PANORAMA_VIEWPORT_SIZE, mc.displayWidth);
+        int viewportHeight = Math.min(PANORAMA_VIEWPORT_SIZE, mc.displayHeight);
+        if (viewportWidth <= 0 || viewportHeight <= 0) {
+            mc.getFramebuffer().bindFramebuffer(true);
+            Rects.fill(0f, 0f, width, height, new Color(0, 0, 0, 255));
+            return;
+        }
+        GlStateManager.viewport(0, 0, viewportWidth, viewportHeight);
         drawPanorama(partialTicks);
         rotateAndBlurSkybox(width, height, zLevel);
         rotateAndBlurSkybox(width, height, zLevel);

@@ -611,9 +611,10 @@ public class OobeScreen extends ScaledGuiScreen {
     }
 
     private void setModuleEnabled(Class<?> type, boolean enabled) {
-        Module module = FPSMaster.moduleManager.getModule(type);
-        if (module != null) {
+        try {
+            Module module = FPSMaster.moduleManager.getModule(type, true);
             module.set(enabled);
+        } catch (IllegalStateException ignored) {
         }
     }
 

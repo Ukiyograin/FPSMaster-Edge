@@ -2,6 +2,9 @@ package top.fpsmaster.exception;
 
 import top.fpsmaster.modules.logger.ClientLogger;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
+
 /**
  * Centralized exception handler for the FPSMaster application.
  * This class provides methods to handle different types of exceptions in a consistent way.
@@ -86,18 +89,12 @@ public class ExceptionHandler {
         if (cause != null) {
             ClientLogger.error(category + " Exception", "Caused by: " + cause.getClass().getName() + ": " + cause.getMessage());
         }
-        e.printStackTrace();
-
-//         Log stack trace in a structured way
-//        StringWriter sw = new StringWriter();
-//        PrintWriter pw = new PrintWriter(sw);
-//        e.printStackTrace(pw);
-//
-//        // Split the stack trace into lines and log each line
-//        String[] stackTraceLines = sw.toString().split("\\r?\\n");
-//        for (String line : stackTraceLines) {
-//            ClientLogger.debug(line);
-//        }
+        StringWriter sw = new StringWriter();
+        PrintWriter pw = new PrintWriter(sw);
+        e.printStackTrace(pw);
+        for (String line : sw.toString().split("\\r?\\n")) {
+            ClientLogger.error(category + " Exception", line);
+        }
     }
 }
 

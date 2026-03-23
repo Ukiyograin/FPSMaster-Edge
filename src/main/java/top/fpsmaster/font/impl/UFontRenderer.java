@@ -243,6 +243,13 @@ public class UFontRenderer extends FontRenderer {
         }
         return drawStringWithShadow(text, x, y, color);
     }
+
+    public void destroy() {
+        if (stringCache != null) {
+            stringCache.destroy();
+            stringCache = null;
+        }
+    }
 }
 
 

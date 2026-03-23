@@ -23,6 +23,18 @@ public final class EnhancedFontRenderer {
         return instances;
     }
 
+    public static void invalidateAllInstances() {
+        for (EnhancedFontRenderer instance : instances) {
+            instance.invalidateAll();
+        }
+    }
+
+    public static void releaseAllInstances() {
+        for (EnhancedFontRenderer instance : instances) {
+            instance.releaseAll();
+        }
+    }
+
     public String getName() {
         return "Enhanced Font Renderer";
     }
@@ -47,8 +59,7 @@ public final class EnhancedFontRenderer {
     public void cache(StringHash key, CachedString value) {
         int maxCacheSize = 5000;
         if (stringCache.size() >= maxCacheSize) {
-            // 如果缓存达到最大限制，进行清理
-            stringCache.clear();
+            releaseCachedLists();
         }
         stringCache.put(key, value);
     }
@@ -58,6 +69,24 @@ public final class EnhancedFontRenderer {
     }
 
     public void invalidateAll() {
+        releaseCachedLists();
+        this.stringCache.clear();
+        this.stringWidthCache.clear();
+        this.obfuscated.clear();
+    }
+
+    public void releaseAll() {
+        invalidateAll();
+        Integer listId;
+        while ((listId = glRemoval.poll()) != null) {
+            GLAllocation.deleteDisplayLists(listId);
+        }
+    }
+
+    private void releaseCachedLists() {
+        for (CachedString cachedString : stringCache.values()) {
+            GLAllocation.deleteDisplayLists(cachedString.getListId());
+        }
         this.stringCache.clear();
     }
 

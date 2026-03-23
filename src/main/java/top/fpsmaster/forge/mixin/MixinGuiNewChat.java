@@ -2,7 +2,6 @@ package top.fpsmaster.forge.mixin;
 
 import top.fpsmaster.utils.render.draw.Colors;
 
-import com.google.common.collect.Lists;
 import net.minecraft.client.gui.*;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.entity.player.EntityPlayer;
@@ -32,7 +31,7 @@ public abstract class MixinGuiNewChat {
 
     @Final
     @Shadow
-    private List<ChatLine> drawnChatLines = Lists.newArrayList();
+    private List<ChatLine> drawnChatLines;
 
 
     @Shadow

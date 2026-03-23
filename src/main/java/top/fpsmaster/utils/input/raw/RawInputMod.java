@@ -5,6 +5,7 @@ import net.java.games.input.ControllerEnvironment;
 import net.java.games.input.Mouse;
 import net.minecraft.client.Minecraft;
 import net.minecraft.util.MouseHelper;
+import top.fpsmaster.modules.logger.ClientLogger;
 
 import java.io.File;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -19,6 +20,9 @@ public class RawInputMod {
 
     public void start() {
         try {
+            if (inputThread != null && inputThread.isAlive()) {
+                return;
+            }
             Minecraft.getMinecraft().mouseHelper = new RawMouseHelper();
             String environment;
             if (checkLibrary("jinput-dx8")){
@@ -65,7 +69,7 @@ public class RawInputMod {
             inputThread.setDaemon(true);
             inputThread.start();
         } catch (Exception e) {
-            // ignored
+            ClientLogger.error("Failed to start raw input");
         }
     }
 
@@ -73,11 +77,18 @@ public class RawInputMod {
         try {
             if (inputThread != null && inputThread.isAlive()) {
                 inputThread.interrupt();
+                inputThread.join(200L);
             }
             inputThread = null;
+            mouse = null;
+            controllers = null;
+            dx.set(0);
+            dy.set(0);
             Minecraft.getMinecraft().mouseHelper = new MouseHelper();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
         } catch (Exception e) {
-            // ignored
+            ClientLogger.error("Failed to stop raw input");
         }
     }
 

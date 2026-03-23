@@ -25,7 +25,6 @@ import java.awt.image.BufferedImage;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -145,7 +144,6 @@ public final class HttpRequest extends Utility {
             }
             return true;
         } catch (Exception e) {
-            e.printStackTrace();
             ClientLogger.error("Download failed: " + e.getMessage());
             return false;
         }
@@ -205,28 +203,30 @@ public final class HttpRequest extends Utility {
             if (success && callback != null) {
                 callback.run();
             }
-        }).start();
+        }, "FPSMaster-Download").start();
     }
 
 
     public static BufferedImage downloadImage(String imageUrl) throws IOException {
-        // 验证URL是否为空
         if (imageUrl == null || imageUrl.trim().isEmpty()) {
             throw new IllegalArgumentException("图片URL不能为空");
         }
-
-        // 创建URL对象
-        URL url = new URL(imageUrl);
-
-        // 使用ImageIO读取URL中的图片并转换为BufferedImage
-        BufferedImage image = ImageIO.read(url);
-
-        // 检查是否成功读取图片
-        if (image == null) {
-            throw new IOException("Error when reading image from URL: " + imageUrl);
+        HttpGet request = new HttpGet(imageUrl);
+        request.setConfig(buildRequestConfig());
+        addDefaultHeaders(request);
+        try (CloseableHttpResponse response = HTTP_CLIENT.execute(request)) {
+            HttpEntity entity = response.getEntity();
+            if (entity == null) {
+                throw new IOException("Empty response when reading image from URL: " + imageUrl);
+            }
+            try (InputStream stream = entity.getContent()) {
+                BufferedImage image = ImageIO.read(stream);
+                if (image == null) {
+                    throw new IOException("Error when reading image from URL: " + imageUrl);
+                }
+                return image;
+            }
         }
-
-        return image;
     }
 
 

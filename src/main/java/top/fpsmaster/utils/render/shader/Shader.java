@@ -18,17 +18,13 @@ public abstract class Shader extends Utility {
     public Shader(final String shader) {
         int vertexShaderID, fragmentShaderID;
 
-        try {
-            final InputStream vertexStream = getClass().getResourceAsStream("/assets/minecraft/client/shader/vertex.vert");
+        try (InputStream vertexStream = getClass().getResourceAsStream("/assets/minecraft/client/shader/vertex.vert")) {
             if (vertexStream == null)
                 return;
             vertexShaderID = createShader(IOUtils.toString(vertexStream, StandardCharsets.UTF_8), ARBVertexShader.GL_VERTEX_SHADER_ARB);
-            IOUtils.closeQuietly(vertexStream);
-
             fragmentShaderID = createShader(shader, ARBFragmentShader.GL_FRAGMENT_SHADER_ARB);
         } catch (Exception e) {
             ClientLogger.error("An error occurred while loading shader: " + shader);
-            e.printStackTrace();
             return;
         }
 
@@ -45,6 +41,10 @@ public abstract class Shader extends Utility {
 
         ARBShaderObjects.glLinkProgramARB(program);
         ARBShaderObjects.glValidateProgramARB(program);
+        ARBShaderObjects.glDetachObjectARB(program, vertexShaderID);
+        ARBShaderObjects.glDetachObjectARB(program, fragmentShaderID);
+        ARBShaderObjects.glDeleteObjectARB(vertexShaderID);
+        ARBShaderObjects.glDeleteObjectARB(fragmentShaderID);
     }
 
     public void startShader() {
@@ -109,6 +109,17 @@ public abstract class Shader extends Utility {
 
     public int getProgramId() {
         return program;
+    }
+
+    public void destroy() {
+        if (program != 0) {
+            GL20.glUseProgram(0);
+            ARBShaderObjects.glDeleteObjectARB(program);
+            program = 0;
+        }
+        if (uniformsMap != null) {
+            uniformsMap.clear();
+        }
     }
 }
 

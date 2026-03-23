@@ -4,7 +4,6 @@ import net.minecraft.client.Minecraft;
 import top.fpsmaster.FPSMaster;
 import top.fpsmaster.event.EventDispatcher;
 import top.fpsmaster.features.settings.Setting;
-import top.fpsmaster.features.settings.impl.*;
 import top.fpsmaster.modules.logger.ClientLogger;
 import top.fpsmaster.ui.notification.NotificationManager;
 
@@ -35,21 +34,7 @@ public class Module {
     public void addSettings(Setting<?>... settings) {
         for (Setting<?> setting : settings) {
             if (setting != null) {
-                if (setting instanceof BooleanSetting) {
-                    this.settings.add(setting);
-                } else if (setting instanceof BindSetting) {
-                    this.settings.add(setting);
-                } else if (setting instanceof ModeSetting) {
-                    this.settings.add(setting);
-                } else if (setting instanceof NumberSetting) {
-                    this.settings.add(setting);
-                } else if (setting instanceof TextSetting) {
-                    this.settings.add(setting);
-                } else if (setting instanceof ColorSetting) {
-                    this.settings.add(setting);
-                } else if (setting instanceof MultipleItemSetting) {
-                    this.settings.add(setting);
-                }
+                this.settings.add(setting);
             }
         }
     }
@@ -89,7 +74,6 @@ public class Module {
             }
         } catch (Exception e) {
             ClientLogger.error("An error occurred while toggling module: " + this.name);
-            e.printStackTrace();
         }
     }
 

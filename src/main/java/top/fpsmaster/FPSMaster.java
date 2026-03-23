@@ -40,7 +40,7 @@ public class FPSMaster {
     public static CommandManager commandManager = new CommandManager();
     public static ComponentsManager componentsManager = new ComponentsManager();
     public static Language i18n = new Language();
-    public static ClientThreadPool async = new ClientThreadPool(100);
+    public static ClientThreadPool async = new ClientThreadPool(Math.max(2, Runtime.getRuntime().availableProcessors() / 2));
     public static boolean development = false;
     public static boolean defaultConfigExistedBeforeLoad = false;
 
@@ -50,6 +50,11 @@ public class FPSMaster {
             development = true;
         } catch (Throwable ignored) {
         }
+    }
+
+    public static boolean isDevelopment() {
+        checkDevelopment();
+        return development;
     }
 
     public static String getClientTitle() {
@@ -124,11 +129,12 @@ public class FPSMaster {
 
 
     public void shutdown() {
+        async.close();
         try {
             ClientLogger.info("Saving configs");
             configManager.saveConfig("default");
         } catch (FileException e) {
-            throw new RuntimeException(e);
+            ExceptionHandler.handleFileException(e, "Failed to save default config during shutdown");
         }
     }
 }
