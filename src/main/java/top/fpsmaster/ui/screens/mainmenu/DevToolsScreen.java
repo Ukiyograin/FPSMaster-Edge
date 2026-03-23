@@ -3,8 +3,6 @@ package top.fpsmaster.ui.screens.mainmenu;
 import net.minecraft.client.gui.GuiScreen;
 import top.fpsmaster.FPSMaster;
 import top.fpsmaster.exception.FileException;
-import top.fpsmaster.font.EnhancedFontRenderer;
-import top.fpsmaster.font.FontRendererHook;
 import top.fpsmaster.minimap.Minimap;
 import top.fpsmaster.modules.config.Configure;
 import top.fpsmaster.modules.logger.ClientLogger;
@@ -68,12 +66,9 @@ public class DevToolsScreen extends ScaledGuiScreen {
     }
 
     private void clearCaches() {
-        Backgrounds.clearCaches();
         Backgrounds.initGui();
         Minimap.clearBlockColours = true;
         FPSMaster.fontManager.load();
-        EnhancedFontRenderer.invalidateAllInstances();
-        FontRendererHook.forceRefresh = true;
         setStatus("Caches cleared", new Color(110, 255, 150).getRGB());
     }
 

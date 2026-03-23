@@ -139,7 +139,7 @@ public class DragonWings extends Module {
             }
             GL11.glCullFace(1029);
             GL11.glDisable(GL11.GL_CULL_FACE);
-            GL11.glColor3f(1.0F, 1.0F, 1.0F);
+            GL11.glColor3f(255F, 255F, 255F);
             GL11.glPopMatrix();
         }
 

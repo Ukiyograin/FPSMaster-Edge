@@ -1,7 +1,5 @@
 package top.fpsmaster.utils.render.shader;
 
-import top.fpsmaster.modules.logger.ClientLogger;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -18,10 +16,9 @@ public class GLSLSandboxShader {
 
     public GLSLSandboxShader(String fragmentShaderLocation) throws Exception {
         int program = glCreateProgram();
-        int vertexShader = createShader(GLSLSandboxShader.class.getResourceAsStream("/assets/minecraft/client/shaders/passthrough.glsl"), GL_VERTEX_SHADER);
-        int fragmentShader = createShader(GLSLSandboxShader.class.getResourceAsStream("/assets/minecraft/client/shaders/" + fragmentShaderLocation), GL_FRAGMENT_SHADER);
-        glAttachShader(program, vertexShader);
-        glAttachShader(program, fragmentShader);
+
+        glAttachShader(program, createShader(GLSLSandboxShader.class.getResourceAsStream("/assets/minecraft/client/shaders/passthrough.glsl"), GL_VERTEX_SHADER));
+        glAttachShader(program, createShader(GLSLSandboxShader.class.getResourceAsStream("/assets/minecraft/client/shaders/" + fragmentShaderLocation), GL_FRAGMENT_SHADER));
 
         glLinkProgram(program);
 
@@ -29,13 +26,10 @@ public class GLSLSandboxShader {
 
         // If linking failed
         if (linked == 0) {
-            ClientLogger.error(glGetProgramInfoLog(program, glGetProgrami(program, GL_INFO_LOG_LENGTH)));
+            System.err.println(glGetProgramInfoLog(program, glGetProgrami(program, GL_INFO_LOG_LENGTH)));
+
             throw new IllegalStateException("Shader failed to link");
         }
-        glDetachShader(program, vertexShader);
-        glDetachShader(program, fragmentShader);
-        glDeleteShader(vertexShader);
-        glDeleteShader(fragmentShader);
 
         this.programId = program;
 
@@ -60,13 +54,9 @@ public class GLSLSandboxShader {
     }
 
     private int createShader(InputStream inputStream, int shaderType) throws IOException {
-        if (inputStream == null) {
-            throw new IOException("Shader resource stream is null");
-        }
         int shader = glCreateShader(shaderType);
-        try (InputStream stream = inputStream) {
-            glShaderSource(shader, readStreamToString(stream));
-        }
+
+        glShaderSource(shader, readStreamToString(inputStream));
 
         glCompileShader(shader);
 
@@ -74,7 +64,8 @@ public class GLSLSandboxShader {
 
         // If compilation failed
         if (compiled == 0) {
-            ClientLogger.error(glGetShaderInfoLog(shader, glGetShaderi(shader, GL_INFO_LOG_LENGTH)));
+            System.err.println(glGetShaderInfoLog(shader, glGetShaderi(shader, GL_INFO_LOG_LENGTH)));
+
             throw new IllegalStateException("Failed to compile shader");
         }
 
@@ -93,11 +84,6 @@ public class GLSLSandboxShader {
         }
 
         return new String(out.toByteArray(), StandardCharsets.UTF_8);
-    }
-
-    public void destroy() {
-        glUseProgram(0);
-        glDeleteProgram(this.programId);
     }
 }
 

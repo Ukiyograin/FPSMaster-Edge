@@ -589,11 +589,6 @@ public class GlyphCache {
         /* Initialize the background to all white but fully transparent. */
         glyphCacheGraphics.clearRect(0, 0, TEXTURE_WIDTH, TEXTURE_HEIGHT);
 
-        if (textureName != 0) {
-            GL11.glDeleteTextures(textureName);
-            textureName = 0;
-        }
-
         /* Allocate new OpenGL texure */
         singleIntBuffer.clear();
         GL11.glGenTextures(singleIntBuffer);
@@ -678,24 +673,6 @@ public class GlyphCache {
         GL11.glBindTexture(GL11.GL_TEXTURE_2D, 0);
 
         return textureId;
-    }
-
-    void destroy() {
-        if (stringGraphics != null) {
-            stringGraphics.dispose();
-            stringGraphics = null;
-        }
-        glyphCacheGraphics.dispose();
-        glyphCache.clear();
-        fontCache.clear();
-        usedFonts.clear();
-        cachePosX = GLYPH_BORDER;
-        cachePosY = GLYPH_BORDER;
-        cacheLineHeight = 0;
-        if (textureName != 0) {
-            GL11.glDeleteTextures(textureName);
-            textureName = 0;
-        }
     }
 
 }

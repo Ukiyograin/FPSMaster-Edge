@@ -523,7 +523,7 @@ public class TextField extends Gui {
 
         Tessellator tessellator = Tessellator.getInstance();
         WorldRenderer bufferbuilder = tessellator.getWorldRenderer();
-        GlStateManager.color(0.0F, 0.0F, 1.0F, 1.0F);
+        GlStateManager.color(0.0F, 0.0F, 255.0F, 255.0F);
         GlStateManager.disableTexture2D();
         GlStateManager.enableColorLogic();
         GlStateManager.colorLogicOp(5387);

@@ -59,7 +59,7 @@ public final class EnhancedFontRenderer {
     public void cache(StringHash key, CachedString value) {
         int maxCacheSize = 5000;
         if (stringCache.size() >= maxCacheSize) {
-            releaseCachedLists();
+            stringCache.clear();
         }
         stringCache.put(key, value);
     }
@@ -69,7 +69,6 @@ public final class EnhancedFontRenderer {
     }
 
     public void invalidateAll() {
-        releaseCachedLists();
         this.stringCache.clear();
         this.stringWidthCache.clear();
         this.obfuscated.clear();
@@ -77,17 +76,6 @@ public final class EnhancedFontRenderer {
 
     public void releaseAll() {
         invalidateAll();
-        Integer listId;
-        while ((listId = glRemoval.poll()) != null) {
-            GLAllocation.deleteDisplayLists(listId);
-        }
-    }
-
-    private void releaseCachedLists() {
-        for (CachedString cachedString : stringCache.values()) {
-            GLAllocation.deleteDisplayLists(cachedString.getListId());
-        }
-        this.stringCache.clear();
     }
 
     public List<StringHash> getObfuscated() {

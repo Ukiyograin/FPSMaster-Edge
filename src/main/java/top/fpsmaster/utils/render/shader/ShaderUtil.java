@@ -6,15 +6,11 @@ import top.fpsmaster.modules.logger.ClientLogger;
 import top.fpsmaster.utils.system.OptifineUtil;
 import top.fpsmaster.utils.core.Utility;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL20.*;
 
 public class ShaderUtil extends Utility {
     private final int programID;
-    private final Map<String, Integer> uniformCache = new HashMap<>();
 
     public ShaderUtil(String shader, String vertexShaderLoc) {
         int program = glCreateProgram();
@@ -49,10 +45,6 @@ public class ShaderUtil extends Utility {
         if (status == 0) {
             throw new IllegalStateException("Shader failed to link!");
         }
-        glDetachShader(program, fragmentShaderID);
-        glDetachShader(program, vertexShaderID);
-        glDeleteShader(fragmentShaderID);
-        glDeleteShader(vertexShaderID);
         this.programID = program;
     }
 
@@ -70,7 +62,7 @@ public class ShaderUtil extends Utility {
     }
 
     public void setUniformf(String name, float... args) {
-        int loc = getUniformLocation(name);
+        int loc = glGetUniformLocation(programID, name);
         switch (args.length) {
             case 1:
                 glUniform1f(loc, args[0]);
@@ -88,19 +80,9 @@ public class ShaderUtil extends Utility {
     }
 
     public void setUniformi(String name, int... args) {
-        int loc = getUniformLocation(name);
+        int loc = glGetUniformLocation(programID, name);
         if (args.length > 1) glUniform2i(loc, args[0], args[1]);
         else glUniform1i(loc, args[0]);
-    }
-
-    private int getUniformLocation(String name) {
-        Integer cached = uniformCache.get(name);
-        if (cached != null) {
-            return cached;
-        }
-        int location = glGetUniformLocation(programID, name);
-        uniformCache.put(name, location);
-        return location;
     }
 
     public static void drawQuads(float x, float y, float width, float height) {
@@ -150,12 +132,6 @@ public class ShaderUtil extends Utility {
         }
 
         return shader;
-    }
-
-    public void destroy() {
-        glUseProgram(0);
-        glDeleteProgram(programID);
-        uniformCache.clear();
     }
 }
 

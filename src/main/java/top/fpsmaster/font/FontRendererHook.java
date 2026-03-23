@@ -103,12 +103,6 @@ public final class FontRendererHook {
         }
     }
 
-    public void release() {
-        deleteTextureId();
-        enhancedFontRenderer.releaseAll();
-        forceRefresh = true;
-    }
-
     public static String clearColorReset(String text) {
         int startIndex = 0;
         int endIndex = text.length();
