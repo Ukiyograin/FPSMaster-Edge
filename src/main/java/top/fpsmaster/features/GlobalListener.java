@@ -60,6 +60,7 @@ public class GlobalListener {
             return;
         }
         lastFlushAt = now;
+        FPSMaster.telemetryReporter.tick(now);
         if (mc != null && mc.theWorld != null) {
             Utility.flush();
         }

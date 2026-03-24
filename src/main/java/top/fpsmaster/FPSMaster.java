@@ -8,6 +8,7 @@ import top.fpsmaster.features.impl.interfaces.ClientSettings;
 import top.fpsmaster.features.manager.ModuleManager;
 import top.fpsmaster.font.FontManager;
 import top.fpsmaster.modules.client.thread.ClientThreadPool;
+import top.fpsmaster.modules.client.telemetry.EdgeTelemetryReporter;
 import top.fpsmaster.modules.config.ConfigManager;
 import top.fpsmaster.modules.i18n.Language;
 import top.fpsmaster.modules.logger.ClientLogger;
@@ -41,6 +42,7 @@ public class FPSMaster {
     public static ComponentsManager componentsManager = new ComponentsManager();
     public static Language i18n = new Language();
     public static ClientThreadPool async = new ClientThreadPool(Math.max(2, Runtime.getRuntime().availableProcessors() / 2));
+    public static EdgeTelemetryReporter telemetryReporter = new EdgeTelemetryReporter();
     public static boolean development = false;
     public static boolean defaultConfigExistedBeforeLoad = false;
 
@@ -129,6 +131,7 @@ public class FPSMaster {
 
 
     public void shutdown() {
+        telemetryReporter.shutdown();
         async.close();
         try {
             ClientLogger.info("Saving configs");

@@ -30,6 +30,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 
 public class ConfigManager {
 
@@ -68,6 +69,7 @@ public class ConfigManager {
         client.addProperty("oobeCompleted", configure.oobeCompleted);
         client.addProperty("antiCheatEnabled", configure.antiCheatEnabled);
         client.addProperty("anonymousDataEnabled", configure.anonymousDataEnabled);
+        client.addProperty("telemetryInstanceId", configure.telemetryInstanceId);
         client.addProperty("classicBackgroundColor", configure.classicBackgroundColor);
         client.addProperty("classicBackgroundHue", configure.classicBackgroundHue);
         client.addProperty("classicBackgroundSaturation", configure.classicBackgroundSaturation);
@@ -194,6 +196,9 @@ public class ConfigManager {
                         : FPSMaster.defaultConfigExistedBeforeLoad;
                 configure.antiCheatEnabled = !client.has("antiCheatEnabled") || client.get("antiCheatEnabled").getAsBoolean();
                 configure.anonymousDataEnabled = !client.has("anonymousDataEnabled") || client.get("anonymousDataEnabled").getAsBoolean();
+                configure.telemetryInstanceId = client.has("telemetryInstanceId")
+                        ? client.get("telemetryInstanceId").getAsString()
+                        : UUID.randomUUID().toString();
                 if (client.has("classicBackgroundColor")) {
                     configure.classicBackgroundColor = client.get("classicBackgroundColor").getAsInt();
                 }
@@ -219,6 +224,9 @@ public class ConfigManager {
                     configure.classicBackgroundSaturation = converted.saturation;
                     configure.classicBackgroundBrightness = converted.brightness;
                     configure.classicBackgroundAlpha = converted.alpha;
+                }
+                if (configure.telemetryInstanceId == null || configure.telemetryInstanceId.trim().isEmpty()) {
+                    configure.telemetryInstanceId = UUID.randomUUID().toString();
                 }
             }
 
