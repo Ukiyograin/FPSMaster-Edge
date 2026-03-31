@@ -20,13 +20,10 @@ import net.minecraftforge.fml.relauncher.SideOnly;
 import org.apache.commons.lang3.Validate;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.lwjgl.opengl.GL11;
 import top.fpsmaster.FPSMaster;
 import top.fpsmaster.font.impl.UFontRenderer;
 import top.fpsmaster.utils.render.draw.Hover;
 import top.fpsmaster.utils.render.draw.Images;
-import top.fpsmaster.utils.render.draw.Rects;
-import top.fpsmaster.utils.render.gui.UiScale;
 
 import java.awt.image.BufferedImage;
 import java.net.UnknownHostException;
@@ -39,17 +36,13 @@ public class ServerListEntry {
     private static final Logger logger = LogManager.getLogger();
     private static final ThreadPoolExecutor field_148302_b = new ScheduledThreadPoolExecutor(5, (new ThreadFactoryBuilder()).setNameFormat("Server Pinger #%d").setDaemon(true).build());
     private static final ResourceLocation UNKNOWN_SERVER = new ResourceLocation("textures/misc/unknown_server.png");
-    private static final ResourceLocation SERVER_SELECTION_BUTTONS = new ResourceLocation("textures/gui/server_selection.png");
     private final Minecraft mc;
     private final ServerData server;
     private final ResourceLocation serverIcon;
     private String field_148299_g;
     private DynamicTexture field_148305_h;
-
-
-    int x, y, width, height;
-
-    GuiMultiplayer owner;
+    private final GuiMultiplayer owner;
+    private long lastClick = 0;
 
     protected ServerListEntry(GuiMultiplayer multiplayer, ServerData p_i45048_2_) {
         this.owner = multiplayer;
@@ -60,17 +53,12 @@ public class ServerListEntry {
     }
 
 
-    public void drawEntry(int slotIndex, int x, int y, int listWidth, int slotHeight, int mouseX, int mouseY, boolean isSelected) {
+    public void drawEntry(int slotIndex, int x, int y, int listWidth, int mouseX, int mouseY) {
         if (!this.server.field_78841_f) {
             this.server.field_78841_f = true;
             this.server.pingToServer = -2L;
             this.server.serverMOTD = "";
             this.server.populationInfo = "";
-
-            this.x = x;
-            this.y = y;
-            this.width = listWidth;
-            this.height = slotHeight;
 
             field_148302_b.submit(() -> {
                 try {
@@ -102,7 +90,6 @@ public class ServerListEntry {
         int j = text.getStringWidth(s2);
         text.drawString(s2, x + listWidth - j - 15 - 2 - 5, y + 1 + 5, -1);
         int k = 0;
-        String s = null;
         int l;
         String s1;
         if (flag2) {
@@ -139,7 +126,7 @@ public class ServerListEntry {
         }
 
 //        this.mc.getTextureManager().bindTexture(Gui.icons);
-        Images.drawUV(Gui.icons, x + listWidth - 15 - 5, y + 5, k * 10, 176 + l * 8, 10, 8, 256, 256,-1,false);
+        Images.drawUV(Gui.icons, x + listWidth - 18, y + 7, k * 10, 176 + l * 8, 10, 8, 256, 256,-1,false);
 
 //        Gui.drawModalRectWithCustomSizedTexture(UiScale.scale(x + listWidth - 15 - 5), UiScale.scale(y + 5), (float) (k * 10), (float) (176 + l * 8), 10, 8, 256.0F, 256.0F);
         if (this.server.getBase64EncodedIconData() != null && !this.server.getBase64EncodedIconData().equals(this.field_148299_g)) {
@@ -166,8 +153,8 @@ public class ServerListEntry {
 //            this.owner.setHoveringText(s);
 //        }
 
-        if (Hover.is(x + listWidth - 16, y + 4, 16, 12, mouseX, mouseY)) {
-            text.drawString(s1, x + listWidth - 8, y + 4, -1);
+        if (Hover.is(x + listWidth - 18, y + 7, 10, 8, mouseX, mouseY)) {
+            text.drawString(s1, mouseX + 6, mouseY - 6, -1);
         }
     }
 
@@ -175,10 +162,7 @@ public class ServerListEntry {
         Images.draw(p_178012_3_, p_178012_1_, p_178012_2_, 32, 32);
     }
 
-    private boolean func_178013_b() {
-        return true;
-    }
-
+    @SuppressWarnings("VulnerableCodeUsages")
     private void prepareServerIcon() {
         if (this.server.getBase64EncodedIconData() == null) {
             this.mc.getTextureManager().deleteTexture(this.serverIcon);
@@ -217,11 +201,15 @@ public class ServerListEntry {
 
     }
 
-    public void clicked(int mouseX, int mouseY, int button) {
-    }
-
     public ServerData getServerData() {
         return this.server;
+    }
+
+    public void triggerClick() {
+        if (Minecraft.getSystemTime() - lastClick < 250L) {
+            FMLClientHandler.instance().connectToServer(owner, getServerData());
+        }
+        lastClick = Minecraft.getSystemTime();
     }
 }
 

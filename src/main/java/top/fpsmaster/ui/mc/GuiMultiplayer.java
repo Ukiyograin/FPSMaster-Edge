@@ -30,7 +30,6 @@ import java.io.File;
 import java.util.List;
 
 public class GuiMultiplayer extends ScaledGuiScreen {
-
     private ServerData selectedServer;
     private static final Logger logger = LogManager.getLogger();
     private final List<ServerData> servers = Lists.newArrayList();
@@ -95,7 +94,7 @@ public class GuiMultiplayer extends ScaledGuiScreen {
     public void initGui() {
         super.initGui();
         loadServerList();
-        selectedServer = servers.isEmpty() ? null : servers.get(0);
+        selectedServer = null;
 
         serverListInternet.clear();
         for (ServerData server : servers) {
@@ -183,6 +182,7 @@ public class GuiMultiplayer extends ScaledGuiScreen {
                 if (rowVisible && mouseInViewport && Hover.is(rowX, y, rowWidth, rowHeight, mouseX, mouseY)) {
                     if (consumePressInBounds(rowX, y, rowWidth, rowHeight, 0) != null) {
                         selectedServer = server.getServerData();
+                        server.triggerClick();
                     }
                     Rects.rounded(Math.round(rowX), Math.round(y), Math.round(rowWidth), Math.round(rowHeight), new Color(0, 0, 0, 50));
                 }
@@ -190,7 +190,7 @@ public class GuiMultiplayer extends ScaledGuiScreen {
                 if (selectedServer != null && selectedServer == server.getServerData()) {
                     Rects.rounded(Math.round(rowX), Math.round(y), Math.round(rowWidth), Math.round(rowHeight), new Color(255, 255, 255, 50));
                 }
-                server.drawEntry(0, (int) rowX, (int) y, (int) rowWidth, (int) rowHeight, mouseX, mouseY, false);
+                server.drawEntry(0, (int) rowX, (int) y, (int) rowWidth, mouseX, mouseY);
                 y += 58;
             }
             scrollContainer.setHeight(y - 50 - scrollContainer.getScroll());
@@ -214,7 +214,6 @@ public class GuiMultiplayer extends ScaledGuiScreen {
         super.updateScreen();
         FMLClientHandler.instance().setupServerList();
         this.oldServerPinger.pingPendingNetworks();
-
     }
 
     @Override
