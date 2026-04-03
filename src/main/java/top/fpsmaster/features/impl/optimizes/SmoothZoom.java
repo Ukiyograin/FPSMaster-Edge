@@ -2,6 +2,7 @@ package top.fpsmaster.features.impl.optimizes;
 
 import org.lwjgl.input.Keyboard;
 import org.lwjgl.input.Mouse;
+import top.fpsmaster.FPSMaster;
 import top.fpsmaster.event.Subscribe;
 import top.fpsmaster.event.events.EventUpdate;
 import top.fpsmaster.features.manager.Category;
@@ -45,7 +46,7 @@ public class SmoothZoom extends Module {
     public void onUpdate(EventUpdate e) {
         if (Utility.mc.currentScreen != null) return;
 
-        if (Keyboard.isKeyDown(zoomBind.getValue())) {
+        if (isZoomKeyDown()) {
             if(wheelZoom.getValue()){
                 int dWheel = Mouse.getDWheel();
                 zoomScale += dWheel / 60f;
@@ -62,6 +63,14 @@ public class SmoothZoom extends Module {
                 Utility.mc.gameSettings.smoothCamera = false;
             }
         }
+    }
+
+    public boolean isZoomKeyDown() {
+        return Keyboard.isKeyDown(zoomBind.getValue());
+    }
+
+    public static boolean isZoomKeyActive() {
+        return FPSMaster.moduleManager.getModule(SmoothZoom.class).isZoomKeyDown();
     }
 }
 

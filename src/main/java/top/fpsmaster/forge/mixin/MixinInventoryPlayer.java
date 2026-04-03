@@ -11,7 +11,7 @@ import top.fpsmaster.features.impl.optimizes.SmoothZoom;
 public class MixinInventoryPlayer {
     @Inject(method = "changeCurrentItem", at = @At("HEAD"), cancellable = true)
     private void onchangeCurrentItem(int direction, CallbackInfo ci) {
-        if (SmoothZoom.zoom && SmoothZoom.wheelZoom.getValue()) {
+        if (SmoothZoom.wheelZoom.getValue() && SmoothZoom.isZoomKeyActive()) {
             ci.cancel();
         }
     }
