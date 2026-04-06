@@ -7,6 +7,8 @@
 [BiliBili](https://space.bilibili.com/628246693)
 </div>
 
+# FPSMaster Edge
+
 FPSMaster 是一个免费、强大的 Minecraft PvP 客户端。
 
 ### 开发
@@ -16,7 +18,7 @@ FPSMaster 是一个免费、强大的 Minecraft PvP 客户端。
  - 查看我们的[开发指南](docs/development_tutorial.md)了解如何使用我们的模块系统、配置系统等，并完成你的需求。
  - 查看我们的[任务列表](docs/tasks.md)了解当前的开发计划和进度。
 
-如果您要添加新的功能，请先在issue中提出，并进行讨论，避免您开发的功能与项目目标不一致
+ 如果您希望参与到开发中，欢迎您加入开发者群聊：1097885201（只要您有参与的意愿，无论是否有代码贡献，都可以加入）
 
 
 ## 开源许可证
