@@ -12,12 +12,12 @@ import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class RawInputMod {
-
-    private Thread inputThread;
-    public static ArrayList<Mouse> mouses = new ArrayList<>();
-    public static Controller[] controllers;
     public static final AtomicInteger dx = new AtomicInteger(0);
     public static final AtomicInteger dy = new AtomicInteger(0);
+    private Thread inputThread;
+    private static ArrayList<Mouse> mouses = new ArrayList<>();
+    private static Controller[] controllers;
+    private static boolean hasDx8 = false;
 
     public void start() {
         try {
@@ -28,6 +28,7 @@ public class RawInputMod {
             String environment;
             if (checkLibrary("jinput-dx8")) {
                 environment = "DirectInputEnvironmentPlugin";
+                hasDx8 = true;
             } else if (checkLibrary("jinput-raw")) {
                 environment = "DirectAndRawInputEnvironmentPlugin";
             } else {
@@ -35,45 +36,39 @@ public class RawInputMod {
             }
             Class<?> aClass = Class.forName("net.java.games.input." + environment);
             aClass.getDeclaredConstructor().setAccessible(true);
-            ControllerEnvironment env = (ControllerEnvironment) aClass.newInstance();
-            controllers = env.getControllers();
+            controllers = (((ControllerEnvironment) aClass.newInstance())).getControllers();
             inputThread = new Thread(() -> {
-                while (!Thread.currentThread().isInterrupted()) {
-                    if(environment.equals("DirectInputEnvironmentPlugin")){
-                        int i = 0;
-                        while (controllers != null && i < controllers.length && mouses.isEmpty()) {
-                            if (controllers[i].getType() == Controller.Type.MOUSE) {
-                                controllers[i].poll();
-                                if (((Mouse) controllers[i]).getX().getPollData() != 0.0 || ((Mouse) controllers[i]).getY().getPollData() != 0.0) {
-                                    mouses.add((Mouse) controllers[i]);
+                try {
+                    while (!Thread.currentThread().isInterrupted()) {
+                        if (controllers != null && mouses.isEmpty()) {
+                            for (Controller controller : controllers) {
+                                if (controller.getType() == Controller.Type.MOUSE) {
+                                    RawInputMod.mouses.add((Mouse) controller);
+                                    if (RawInputMod.hasDx8) break; // Thank UknownPerson for discovering the logical mouse.
                                 }
                             }
-                            i++;
-                        }
-                    }else {
-                        for (Controller controller : controllers) {
-                            if (controller.getType() == Controller.Type.MOUSE) {
-                                mouses.add((Mouse) controller);
-                            }
-                        }
-                    }
-
-                    if (!mouses.isEmpty()) {
-                        for (Mouse mouse : mouses) {
-                            mouse.poll();
-                            dx.addAndGet((int) mouse.getX().getPollData());
-                            dy.addAndGet((int) mouse.getY().getPollData());
                         }
                         if (Minecraft.getMinecraft().currentScreen != null) {
                             dx.set(0);
                             dy.set(0);
+                            for (Mouse mouse : mouses) {
+                                mouse.poll();
+                            }
+                        } else {
+                            for (Mouse mouse : mouses) {
+                                mouse.poll();
+                                dx.addAndGet((int) mouse.getX().getPollData());
+                                dy.addAndGet((int) mouse.getY().getPollData());
+                            }
+                        }
+                        try {
+                            Thread.sleep(1);
+                        } catch (InterruptedException e) {
+                            Thread.currentThread().interrupt();
                         }
                     }
-                    try {
-                        Thread.sleep(1);
-                    } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                    }
+                } catch (Exception e) {
+                    ClientLogger.error("Failed to start raw input");
                 }
             });
             inputThread.setName("inputThread");
@@ -92,7 +87,6 @@ public class RawInputMod {
             }
             inputThread = null;
             mouses = new ArrayList<>();
-            controllers = null;
             dx.set(0);
             dy.set(0);
             Minecraft.getMinecraft().mouseHelper = new MouseHelper();
