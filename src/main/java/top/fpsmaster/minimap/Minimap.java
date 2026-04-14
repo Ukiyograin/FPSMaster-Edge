@@ -649,6 +649,12 @@ public class Minimap {
                 Minecraft.getMinecraft().gameSettings.setOptionValue(GameSettings.Options.FBO_ENABLE, 0);
                 System.out.println("FBO is supported but off. Turning it on.");
             }
+            if (Minimap.scalingFrameBuffer != null) {
+                Minimap.scalingFrameBuffer.deleteFramebuffer();
+            }
+            if (Minimap.rotationFrameBuffer != null) {
+                Minimap.rotationFrameBuffer.deleteFramebuffer();
+            }
             Minimap.scalingFrameBuffer = new Framebuffer(512, 512, false);
             Minimap.rotationFrameBuffer = new Framebuffer(512, 512, false);
             Minimap.loadedFBO = (Minimap.scalingFrameBuffer.framebufferObject != -1);

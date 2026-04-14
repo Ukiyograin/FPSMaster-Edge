@@ -88,7 +88,9 @@ public class InterfaceHandler {
 
                 if (System.currentTimeMillis() - this.lastFBOTry > 1000L) {
                     this.lastFBOTry = System.currentTimeMillis();
-                    Minimap.loadFrameBuffer();
+                    if (!Minimap.loadedFBO) {
+                        Minimap.loadFrameBuffer();
+                    }
                 }
 
                 if (2 != this.lastMinimapSize) {

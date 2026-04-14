@@ -8,11 +8,33 @@ import top.fpsmaster.modules.logger.ClientLogger;
 import java.awt.*;
 import java.awt.geom.RoundRectangle2D;
 import java.awt.image.BufferedImage;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.HashMap;
 
 public class AWTUtils {
-    private static final HashMap<Integer, ResourceLocation[]> generated = new HashMap<>();
-    private static final HashMap<String, ResourceLocation> generatedFull = new HashMap<>();
+    private static final int MAX_GENERATED = 64;
+    private static final int MAX_GENERATED_FULL = 128;
+    private static final Map<Integer, ResourceLocation[]> generated = new LinkedHashMap<Integer, ResourceLocation[]>(16, 0.75f, true) {
+        @Override
+        protected boolean removeEldestEntry(Map.Entry<Integer, ResourceLocation[]> eldest) {
+            if (size() <= MAX_GENERATED) {
+                return false;
+            }
+            deleteTextures(eldest.getValue());
+            return true;
+        }
+    };
+    private static final Map<String, ResourceLocation> generatedFull = new LinkedHashMap<String, ResourceLocation>(16, 0.75f, true) {
+        @Override
+        protected boolean removeEldestEntry(Map.Entry<String, ResourceLocation> eldest) {
+            if (size() <= MAX_GENERATED_FULL) {
+                return false;
+            }
+            deleteTexture(eldest.getValue());
+            return true;
+        }
+    };
 
     public static ResourceLocation generateRoundImage(int width, int height, int radius) {
         return generateRoundImage(width, height, radius, 1.0f);
@@ -106,6 +128,25 @@ public class AWTUtils {
             graphics2D.dispose();
         }
         return generated.get(pixelRadius);
+    }
+
+    private static void deleteTextures(ResourceLocation[] locations) {
+        if (locations == null) {
+            return;
+        }
+        for (ResourceLocation location : locations) {
+            deleteTexture(location);
+        }
+    }
+
+    private static void deleteTexture(ResourceLocation location) {
+        if (location == null) {
+            return;
+        }
+        Minecraft mc = Minecraft.getMinecraft();
+        if (mc != null && mc.getTextureManager() != null) {
+            mc.getTextureManager().deleteTexture(location);
+        }
     }
 }
 

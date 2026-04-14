@@ -29,6 +29,12 @@ public final class EnhancedFontRenderer {
         }
     }
 
+    public static void tickAllInstances() {
+        for (EnhancedFontRenderer instance : instances) {
+            instance.tick();
+        }
+    }
+
     public static void releaseAllInstances() {
         for (EnhancedFontRenderer instance : instances) {
             instance.releaseAll();
@@ -40,9 +46,8 @@ public final class EnhancedFontRenderer {
     }
 
     public void tick() {
-        // 清除 obfuscated 中的字符串缓存
         for (StringHash hash : obfuscated) {
-            stringCache.remove(hash);
+            release(stringCache.remove(hash));
         }
         obfuscated.clear();
     }
@@ -59,7 +64,7 @@ public final class EnhancedFontRenderer {
     public void cache(StringHash key, CachedString value) {
         int maxCacheSize = 5000;
         if (stringCache.size() >= maxCacheSize) {
-            stringCache.clear();
+            releaseCache();
         }
         stringCache.put(key, value);
     }
@@ -69,7 +74,7 @@ public final class EnhancedFontRenderer {
     }
 
     public void invalidateAll() {
-        this.stringCache.clear();
+        releaseCache();
         this.stringWidthCache.clear();
         this.obfuscated.clear();
     }
@@ -80,6 +85,19 @@ public final class EnhancedFontRenderer {
 
     public List<StringHash> getObfuscated() {
         return obfuscated;
+    }
+
+    private void releaseCache() {
+        for (CachedString cachedString : stringCache.values()) {
+            release(cachedString);
+        }
+        stringCache.clear();
+    }
+
+    private void release(CachedString cachedString) {
+        if (cachedString != null) {
+            glRemoval.offer(cachedString.getListId());
+        }
     }
 
 
