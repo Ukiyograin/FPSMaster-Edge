@@ -25,11 +25,12 @@ FPSMaster 是一个免费、强大的 Minecraft PvP 客户端。
 Edge 已接入 GitHub Actions 自动发版流程。
 
 - 所有 `pull_request` 和命中的 `push` 都会执行构建校验。
-- 命中发布分支时，会自动创建 GitHub Release，并调用后端发布接口登记版本。
+- `canary`、`beta`、`release` 分支命中时，会自动创建 GitHub Release，并调用后端发布接口登记版本。
+- `nightly` 改为 GitHub Actions 定时任务每日执行一次，仅当 `main` 自上一次 nightly 发布后有新提交时才会构建并发布。
 
 分支到更新通道的映射：
 
-- `main`、`nightly`、`nightly/*` -> `nightly`
+- 定时任务基于 `main` -> `nightly`
 - `canary`、`canary/*` -> `canary`
 - `beta`、`beta/*` -> `beta`
 - `release`、`release/*` -> `release`

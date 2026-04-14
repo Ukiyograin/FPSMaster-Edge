@@ -5,14 +5,14 @@ on:
   push:
     branches:
       - main
-      - nightly
-      - nightly/**
       - canary
       - canary/**
       - beta
       - beta/**
       - release
       - release/**
+  schedule:
+    - cron: "0 19 * * *"
   workflow_dispatch:
 
 permissions:
@@ -26,8 +26,9 @@ jobs:
   build:
     runs-on: ubuntu-latest
     outputs:
-      should_publish: ${{ steps.channel.outputs.should_publish }}
+      should_publish: ${{ steps.decision.outputs.should_publish }}
       channel: ${{ steps.channel.outputs.channel }}
+      should_build: ${{ steps.decision.outputs.should_build }}
       release_tag: ${{ steps.meta.outputs.release_tag }}
       version_name: ${{ steps.meta.outputs.version_name }}
       asset_name: ${{ steps.meta.outputs.asset_name }}
@@ -45,14 +46,23 @@ jobs:
         id: channel
         shell: bash
         run: |
+          event_name="${GITHUB_EVENT_NAME}"
           ref="${GITHUB_REF_NAME}"
           channel=""
           should_publish="false"
 
-          case "$ref" in
-            main|nightly|nightly/*)
+          if [ "$event_name" = "schedule" ]; then
+            channel="nightly"
+            should_publish="true"
+          else
+            case "$ref" in
+            main)
+              channel=""
+              should_publish="false"
+              ;;
+            nightly|nightly/*)
               channel="nightly"
-              should_publish="true"
+              should_publish="false"
               ;;
             canary|canary/*)
               channel="canary"
@@ -66,21 +76,66 @@ jobs:
               channel="release"
               should_publish="true"
               ;;
-          esac
+            esac
+          fi
 
           echo "channel=$channel" >> "$GITHUB_OUTPUT"
           echo "should_publish=$should_publish" >> "$GITHUB_OUTPUT"
 
+      - name: Detect nightly changes
+        id: nightly
+        if: github.event_name == 'schedule'
+        shell: bash
+        run: |
+          git fetch --force --tags origin main
+
+          current_short_sha="$(git rev-parse --short=8 origin/main)"
+          latest_nightly_tag="$(git tag -l 'nightly-*' --sort=-v:refname | head -n 1)"
+          latest_nightly_sha=""
+
+          if [ -n "$latest_nightly_tag" ]; then
+            latest_nightly_sha="${latest_nightly_tag##*-}"
+          fi
+
+          should_build="true"
+          should_publish="${{ steps.channel.outputs.should_publish }}"
+
+          if [ "$current_short_sha" = "$latest_nightly_sha" ]; then
+            should_build="false"
+            should_publish="false"
+          fi
+
+          echo "should_build=$should_build" >> "$GITHUB_OUTPUT"
+          echo "should_publish=$should_publish" >> "$GITHUB_OUTPUT"
+
+      - name: Finalize build decision
+        id: decision
+        shell: bash
+        run: |
+          should_build="true"
+          should_publish="${{ steps.channel.outputs.should_publish }}"
+
+          if [ "${GITHUB_EVENT_NAME}" = "schedule" ]; then
+            should_build="${{ steps.nightly.outputs.should_build }}"
+            should_publish="${{ steps.nightly.outputs.should_publish }}"
+          fi
+
+          echo "should_build=$should_build" >> "$GITHUB_OUTPUT"
+          echo "should_publish=$should_publish" >> "$GITHUB_OUTPUT"
+
       - name: Set up JDK 17
+        if: steps.decision.outputs.should_build == 'true'
         uses: actions/setup-java@v4
         with:
           java-version: "17"
           distribution: "temurin"
 
       - name: Setup Gradle
+        if: steps.decision.outputs.should_build == 'true'
         uses: gradle/actions/setup-gradle@v3
 
       - name: Build with Gradle Wrapper
+        if: steps.decision.outputs.should_build == 'true'
         shell: bash
         run: |
           chmod +x ./gradlew
@@ -88,6 +143,7 @@ jobs:
 
       - name: Capture artifact metadata
         id: meta
+        if: steps.decision.outputs.should_build == 'true'
         shell: bash
         run: |
           artifact_path="$(find build/libs -maxdepth 1 -type f -name '*.jar' | head -n 1)"
@@ -123,6 +179,7 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
       - name: Upload build artifacts
+        if: steps.decision.outputs.should_build == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: edge-build
