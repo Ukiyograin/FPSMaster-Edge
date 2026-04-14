@@ -30,7 +30,7 @@ Edge 已接入 GitHub Actions 自动发版流程。
 分支到更新通道的映射：
 
 - `main`、`nightly`、`nightly/*` -> `nightly`
-- `cannary`、`cannary/*` -> `cannary`
+- `canary`、`canary/*` -> `canary`
 - `beta`、`beta/*` -> `beta`
 - `release`、`release/*` -> `release`
 

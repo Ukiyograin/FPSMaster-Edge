@@ -7,8 +7,8 @@ on:
       - main
       - nightly
       - nightly/**
-      - cannary
-      - cannary/**
+      - canary
+      - canary/**
       - beta
       - beta/**
       - release
@@ -54,8 +54,8 @@ jobs:
               channel="nightly"
               should_publish="true"
               ;;
-            cannary|cannary/*)
-              channel="cannary"
+            canary|canary/*)
+              channel="canary"
               should_publish="true"
               ;;
             beta|beta/*)
