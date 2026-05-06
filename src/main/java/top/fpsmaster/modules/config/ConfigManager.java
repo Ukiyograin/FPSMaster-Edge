@@ -29,10 +29,7 @@ import top.fpsmaster.utils.io.FileUtils;
 import top.fpsmaster.utils.world.ItemsUtil;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 public class ConfigManager {
     private final Gson gson = new GsonBuilder().setPrettyPrinting().create();
@@ -333,7 +330,7 @@ public class ConfigManager {
                 }
             }
 
-            JsonArray shortcutsJson = json.getAsJsonArray("shortcuts");
+            JsonArray shortcutsJson = Optional.ofNullable(json.getAsJsonArray("shortcuts")).orElse(new JsonArray());
             for (JsonElement element : shortcutsJson) {
                 if (element.isJsonObject()) {
                     JsonObject shortcutJson = element.getAsJsonObject();
